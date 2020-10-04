@@ -250,13 +250,13 @@ class Stream(object):
         return self.sort_with()
 
     """
-    Returns an iterator whose elements are sorted using the provided comparator function and key selection function.
+    Returns an iterator whose elements are sorted using the provided key selection function.
     """
-    def sort_with(self, comparator=None, key=None):
+    def sort_with(self, key=None):
         stream = self.stream
 
         def inner():
-            return sorted(stream, cmp=comparator, key=key)
+            return sorted(stream, key=key)
         self.stream = inner()
         return self
 

@@ -61,7 +61,7 @@ class TestStream(unittest.TestCase):
         self.assertEqual(Stream([1, 2, 2, 3, 2, 1, 4, 5, 6, 1]).deduplicate().collect(), [1, 2, 3, 4, 5, 6])
 
     def test_deduplicate_with(self):
-        fingerprinter = lambda name: hashlib.sha256(name).digest()
+        fingerprinter = lambda name: hashlib.sha256(name.encode('utf-8')).digest()
         people = ['Bob', 'Alice', 'Eve', 'Alice', 'Alice', 'Eve', 'Achmed']
         got = Stream(people).deduplicate_with(fingerprinter).collect()
         self.assertEqual(got, ['Bob', 'Alice', 'Eve', 'Achmed'])
