@@ -1,0 +1,35 @@
+sudo: false
+
+language:
+  - python
+
+matrix:
+  include:
+    - python: "2.7"
+    - python: "3.4"
+    - python: "3.5"
+    - python: "3.6"
+    - python: "3.7"
+    - python: "3.8"
+    - python: "3.9-dev"
+  allow_failures:
+    - python: "3.9-dev"
+
+before_install:
+  - python --version
+  - pip install -U pip
+  - pip install -U pytest
+  - pip install -U pytest-cov
+  - pip install codecov
+
+install:
+  - pip install -r requirements.txt
+
+script:
+  - pytest --cov=pstream --cov-report=xml tests/*.py
+
+notifications:
+  email: false
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
