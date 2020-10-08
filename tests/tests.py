@@ -25,7 +25,7 @@ import unittest
 import hashlib
 
 from pystream import Stream
-
+from pystream import InfiniteCollectionError
 
 class TestStream(unittest.TestCase):
 
@@ -41,6 +41,7 @@ class TestStream(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(Stream([]).collect(), [])
+        self.assertEqual(Stream().collect(), [])
 
     def test_single(self):
         self.assertEqual(Stream([1]).collect(), [1])
@@ -121,11 +122,54 @@ class TestStream(unittest.TestCase):
     def test_map_empty(self):
         self.assertEqual(Stream([]).map(lambda x: x * 2).collect(), [])
 
+    def test_next(self):
+        s = Stream([1, 2, 3, 4, 5]).map(lambda x: x * 2)
+        for i in range(1, 4):
+            self.assertEqual(next(s), i * 2)
+        self.assertEqual(s.collect(), [8, 10])
+
+    def test_pool_even_even(self):
+        self.assertEqual(Stream([1, 2, 3, 4]).pool(2).collect(), [[1, 2], [3, 4]])
+
+    def test_pool_odd_even(self):
+        self.assertEqual(Stream([1, 2, 3, 4, 5]).pool(2).collect(), [[1, 2], [3, 4], [5]])
+
+    def test_pool_even_odd(self):
+        self.assertEqual(Stream([1, 2, 3, 4]).pool(3).collect(), [[1, 2, 3], [4]])
+
+    def test_pool_odd_odd(self):
+        self.assertEqual(Stream([1, 2, 3, 4, 5]).pool(3).collect(), [[1, 2, 3], [4, 5]])
+
+    def test_pool_empty(self):
+        self.assertEqual(Stream([]).pool(5).collect(), [])
+
+    def test_pool_single(self):
+        self.assertEqual(Stream([1]).pool(5).collect(), [[1]])
+
     def test_reduce(self):
         add = lambda a, b: a + b
         numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         got = Stream(numbers).reduce(0, add)
         assert got == 45
+
+    def test_repeat(self):
+        s = Stream().repeat(5)
+        for _ in range(100):
+            self.assertEqual(next(s), 5)
+
+    def test_repeat_break_upstream(self):
+        s = Stream([1, 2, 3]).repeat(5)
+        for _ in range(100):
+            self.assertEqual(next(s), 5)
+
+    def test_repeat_terminator(self):
+        self.assertEqual(Stream().repeat(5).take(5).collect(), [5, 5, 5, 5, 5])
+
+    def test_repeat_collection(self):
+        try:
+            Stream().repeat(1).collect()
+        except InfiniteCollectionError:
+            pass
 
     def test_reverse(self):
         self.assertEqual(Stream([1, 2, 3, 4]).reverse().collect(), [4, 3, 2, 1])
@@ -172,6 +216,14 @@ class TestStream(unittest.TestCase):
 
     def test_take_while(self):
         self.assertEqual(Stream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(lambda x: x < 5).collect(), [1, 2, 3, 4])
+
+    def test_tee(self):
+        a = list()
+        b = list()
+        got = Stream([1, 2, 3, 4]).tee(a, b).map(lambda x: x * 2).collect()
+        self.assertEqual(got, [2, 4, 6 ,8])
+        self.assertEqual(a, [1, 2, 3, 4])
+        self.assertEqual(b, [1, 2, 3, 4])
 
     def test_zip(self):
         self.assertEqual(Stream([0, 1, 2]).zip([3, 4, 5]).collect(), [(0, 3), (1, 4), (2, 5)])

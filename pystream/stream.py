@@ -19,6 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import absolute_import
+
 import collections
 
 from builtins import object
@@ -35,17 +37,20 @@ from collections import Iterator
 import itertools
 import functools
 
+from .errors import InfiniteCollectionError
+
 
 class Stream(object):
 
-    def __init__(self, stream):
+    def __init__(self, stream=[]):
         if isinstance(stream, Iterator):
             self.stream = stream
         elif isinstance(stream, Iterable):
             self.stream = (x for x in stream)
         else:
             raise ValueError(
-                'pystream.Stream can only accept either an iterator or an iterable, got {}'.format(type(stream)))
+                'pystream.Stream can only accept either an iterator or an iterable. Got {}'.format(type(stream)))
+        self._repeating = False
 
     def chain(self, *others):
         """
@@ -61,6 +66,8 @@ class Stream(object):
         """
         Evaluates the stream, consuming it and returning a list of the final output.
         """
+        if self._repeating:
+            raise InfiniteCollectionError()
         return [_ for _ in self]
 
     def deduplicate(self):
@@ -254,7 +261,7 @@ class Stream(object):
 
     def sort_with(self, key=None):
         """
-            Returns an iterator whose elements are sorted using the provided key selection function.
+        Returns an iterator whose elements are sorted using the provided key selection function.
         """
         stream = self.stream
 
@@ -297,6 +304,18 @@ class Stream(object):
         assert got == [1, 2, 3, 4]
         """
         self.stream = itertools.takewhile(predicate, self.stream)
+        self._repeating = False
+        return self
+
+    def tee(self, *others):
+        stream = self.stream
+
+        def inner():
+            for element in stream:
+                for other in others:
+                    other.append(element)
+                yield element
+        self.stream = inner()
         return self
 
     def zip(self, *others):
@@ -309,8 +328,60 @@ class Stream(object):
         self.stream = zip(self.stream, *others)
         return self
 
+    def pool(self, size):
+        """
+        Returns an iterator that will collect up to `size` elements into a list before
+        yielding.
+
+        `size` must be greater than 0.
+
+        got = Stream([1, 2, 3, 4, 5]).pool(3).collect()
+        assert = got == [[1, 2, 3], [4, 5]]
+        """
+        if size <= 0:
+            raise ValueError("pystream.Stream.pool sizes must be greater than 0. Received {}.".format(size))
+        stream = self.stream
+
+        def inner():
+            pool = list()
+            for x in stream:
+                pool.append(x)
+                if len(pool) is size:
+                    yield pool
+                    pool = list()
+            if len(pool) is not 0:
+                yield pool
+        self.stream = inner()
+        return self
+
+    def repeat(self, element):
+        """
+        Returns an iterator the repeats an element endlessly.
+
+        A call to `repeat` __wipes out__ any previous step in the iterator.
+        Unless a terminating step, such as take_while, has been setup after
+        a call to `repeat`, `collect` will throw an InfiniteCollectionError.
+        """
+        return self.repeat_with(lambda: element)
+
+    def repeat_with(self, f):
+        """
+        Returns an iterator the yields the output of `f` endlessly.
+
+        A call to `repeat_with` __wipes out__ any previous step in the iterator.
+        Unless a terminating step, such as take_while, has been setup after
+        a call to `repeat_with`, `collect` will throw an InfiniteCollectionError.
+        """
+
+        def inner():
+            while True:
+                yield f()
+        self.stream = inner()
+        self._repeating = True
+        return self
+
     def __iter__(self):
         return (x for x in self.stream)
 
-
-
+    def __next__(self):
+        return next(self.stream)
