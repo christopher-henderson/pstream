@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2020 Christopher Henderson
+# Copyright (c) 2020 Christopher Henderson, chris@chenderson.org
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,12 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-import unittest
 import hashlib
+import unittest
 
-from pstream import Stream
 from pstream import InfiniteCollectionError
+from pstream import Stream
+
 
 class TestStream(unittest.TestCase):
 
@@ -65,15 +65,16 @@ class TestStream(unittest.TestCase):
         self.assertEqual(Stream().count(), 0)
 
     def test_count_filtered(self):
-        self.assertEqual(Stream([1, 2, 3, 4]).filter(lambda x: x % 2 is 0).count(), 2)
+        self.assertEqual(Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).count(), 2)
 
-    def test_deduplicate(self):
-        self.assertEqual(Stream([1, 2, 2, 3, 2, 1, 4, 5, 6, 1]).deduplicate().collect(), [1, 2, 3, 4, 5, 6])
+    def test_distinct(self):
+        self.assertEqual(Stream([1, 2, 2, 3, 2, 1, 4, 5, 6, 1]).distinct().collect(), [1, 2, 3, 4, 5, 6])
 
-    def test_deduplicate_with(self):
-        fingerprinter = lambda name: hashlib.sha256(name.encode('utf-8')).digest()
+    def test_distinct_with(self):
+        def fingerprint(name):
+            return hashlib.sha256(name.encode('utf-8')).digest()
         people = ['Bob', 'Alice', 'Eve', 'Alice', 'Alice', 'Eve', 'Achmed']
-        got = Stream(people).deduplicate_with(fingerprinter).collect()
+        got = Stream(people).distinct_with(fingerprint).collect()
         self.assertEqual(got, ['Bob', 'Alice', 'Eve', 'Achmed'])
 
     def test_enumerate(self):
@@ -83,10 +84,10 @@ class TestStream(unittest.TestCase):
         self.assertEqual(Stream([]).enumerate().collect(), [])
 
     def test_filter(self):
-        self.assertEqual(Stream([1, 2, 3, 4]).filter(lambda x: x % 2 is 0).collect(), [2, 4])
+        self.assertEqual(Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).collect(), [2, 4])
 
     def test_filter_empty(self):
-        self.assertEqual(Stream([]).filter(lambda x: x % 2 is 0).collect(), [])
+        self.assertEqual(Stream([]).filter(lambda x: x % 2 == 0).collect(), [])
 
     def test_flatten(self):
         self.assertEqual(Stream([[1, 2, 3], [4, 5, 6]]).flatten().collect(), [1, 2, 3, 4, 5, 6])
@@ -118,6 +119,7 @@ class TestStream(unittest.TestCase):
         class Counter:
             def __init__(self):
                 self.count = 0
+
             def increment(self, element):
                 self.count += element
         count = Counter()
@@ -128,6 +130,7 @@ class TestStream(unittest.TestCase):
         class Called:
             def __init__(self):
                 self.called = False
+
             def __call__(self, _):
                 self.called = True
         called = Called()
@@ -136,12 +139,12 @@ class TestStream(unittest.TestCase):
 
     def test_inspect(self):
         inspector = TestStream.Inspector()
-        got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 is 0).inspect(inspector.visit).collect()
+        got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).inspect(inspector.visit).collect()
         self.assertEqual(got, inspector.copy)
 
     def test_inspect_then(self):
         inspector = TestStream.Inspector()
-        got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 is 0).inspect(inspector.visit).map(lambda x: x * 2).collect()
+        got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).inspect(inspector.visit).map(lambda x: x * 2).collect()
         self.assertEqual([2, 4], inspector.copy)
         self.assertEqual(got, [4, 8])
 
@@ -189,7 +192,8 @@ class TestStream(unittest.TestCase):
         self.assertEqual(three, [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
 
     def test_reduce(self):
-        add = lambda a, b: a + b
+        def add(a, b):
+            return a + b
         numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         got = Stream(numbers).reduce(0, add)
         assert got == 45
@@ -235,10 +239,10 @@ class TestStream(unittest.TestCase):
 
     def test_sort_complex(self):
         # sort and reverse incur collections, and sort itself returns a physical list rather than
-        # and iterator, so this is just a bit of whacking around to smoke test the interactions
+        # and iterator, so this == just a bit of whacking around to smoke test the interactions
         # between the pipelines.
         arr = [12, 233, 4567, 344523, 7, 567, 34, 5678, 456, 23, 4, 7, 63, 45, 345]
-        got = Stream(arr).filter(lambda x: x % 2).sort().reverse().filter(lambda x: x < 1000).deduplicate().collect()
+        got = Stream(arr).filter(lambda x: x % 2).sort().reverse().filter(lambda x: x < 1000).distinct().collect()
         self.assertEqual(got, [567, 345, 233, 63, 45, 23, 7])
 
     def test_step_by_even(self):
@@ -269,7 +273,7 @@ class TestStream(unittest.TestCase):
         a = list()
         b = list()
         got = Stream([1, 2, 3, 4]).tee(a, b).map(lambda x: x * 2).collect()
-        self.assertEqual(got, [2, 4, 6 ,8])
+        self.assertEqual(got, [2, 4, 6, 8])
         self.assertEqual(a, [1, 2, 3, 4])
         self.assertEqual(b, [1, 2, 3, 4])
 

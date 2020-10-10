@@ -6,12 +6,58 @@ language:
 matrix:
   include:
     - python: "2.7"
-    - python: "3.4"
-    - python: "3.5"
+      script:
+        - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py
+        - flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
     - python: "3.6"
     - python: "3.7"
     - python: "3.8"
     - python: "3.9-dev"
+    - name: "Python 2.7.10 on Darwin"
+      os: osx
+      osx_image: xcode9.3  # Python 2.7.14_2 running on macOS 10.13
+      language: shell  # 'language: python' errors on Travis CI macOS
+      before_install:
+        - python --version
+        - pip install pytest --user
+        - pip install pip --user
+        - pip install pytest --user
+        - pip install pytest-cov --user
+        - pip install flake8 --user
+      install: pip install ".[test]" --user
+      script:
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py  # pytest command won't be found
+        - python -m flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
+    - name: "Python 3.7.5 on Darwin"
+      os: osx
+      osx_image: xcode10.2  # Python 3.6.5 running on macOS 10.13
+      language: shell  # 'language: python' errors on Travis CI macOS
+      before_install:
+        - python3 --version
+        - pip3 install pytest --user
+        - pip3 install pip --user
+        - pip3 install pytest --user
+        - pip3 install pytest-cov --user
+        - pip3 install flake8 --user
+      install: pip3 install ".[test]" --user
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py  # pytest command won't be found
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+    - name: "Python 3.8.5 on Darwin"
+      os: osx
+      osx_image: xcode11.6
+      language: shell
+      before_install:
+        - python3 --version
+        - pip3 install pytest --user
+        - pip3 install pip --user
+        - pip3 install pytest --user
+        - pip3 install pytest-cov --user
+        - pip3 install flake8 --user
+      install: pip3 install ".[test]" --user
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py  # pytest command won't be found
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
   allow_failures:
     - python: "3.9-dev"
 
@@ -20,16 +66,21 @@ before_install:
   - pip install -U pip
   - pip install -U pytest
   - pip install -U pytest-cov
-  - pip install codecov
+  - pip install -U flake8
 
 install:
   - pip install -r requirements.txt
 
 script:
-  - pytest --cov=pstream --cov-report=xml tests/*.py
+  - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+  - flake8 pstream tests --extend-ignore=F405,E501,F403,F401
 
 notifications:
   email: false
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+branches:
+  only:
+    - "main"

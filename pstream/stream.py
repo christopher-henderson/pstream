@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2020 Christopher Henderson
+# Copyright (c) 2020 Christopher Henderson, chris@chenderson.org
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,9 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from __future__ import absolute_import
 
-import collections
+import functools
+import itertools
 
 from builtins import object
 from builtins import map
@@ -31,11 +33,13 @@ from builtins import zip
 from builtins import reversed
 from builtins import sorted
 
-from collections import Iterable
-from collections import Iterator
-
-import itertools
-import functools
+try:
+    # Py3
+    from collections.abc import Iterator, Iterable
+except ImportError:
+    # Py2
+    from collections import Iterator, Iterable
+from collections import namedtuple
 
 from .errors import InfiniteCollectionError
 
@@ -69,7 +73,7 @@ class Stream(object):
         Evaluates the stream, consuming it and returning a count of the number of elements in the stream.
         """
         if self._infinite:
-            raise InfiniteCollectionError('count')
+            raise InfiniteCollectionError('Stream.count')
         count = 0
         for _ in self:
             count += 1
@@ -80,23 +84,33 @@ class Stream(object):
         Evaluates the stream, consuming it and returning a list of the final output.
         """
         if self._infinite:
-            raise InfiniteCollectionError('collect')
+            raise InfiniteCollectionError('Stream.collect')
         return [_ for _ in self]
 
-    def deduplicate(self):
+    def distinct(self):
         """
-        Returns an iterator that is deduplicated. Deduplication is computed by applying the builtin `hash` function
+        Returns an iterator of distinct elements. Distinction is computed by applying the builtin `hash` function
         to each element. Ordering of elements is maintained.
 
         numbers = [1, 2, 2, 3, 2, 1, 4, 5, 6, 1]
         got = Stream(numbers).deduplicate().collect()
         assert got == [1, 2, 3, 4, 5, 6]
         """
-        return self.deduplicate_with(hash)
+        seen = set()
+        stream = self._stream
 
-    def deduplicate_with(self, f):
+        def inner():
+            for x in stream:
+                if x in seen:
+                    continue
+                seen.add(x)
+                yield x
+        self._stream = inner()
+        return self
+
+    def distinct_with(self, f):
         """
-        Returns an iterator that is deduplicated. Deduplication is computed by applying the provided function `f` to each
+        Returns an iterator that is distinct. Distinction is computed by applying the provided function `f` to each
         element. `f` must return an object that is itself implements `__hash__` and `__eq__`.
         Ordering of elements is maintained.
 
@@ -120,7 +134,7 @@ class Stream(object):
         self._stream = inner()
         return self
 
-    Enumeration = collections.namedtuple('Enumeration', ['count', 'element'])
+    Enumeration = namedtuple('Enumeration', ['count', 'element'])
 
     def enumerate(self):
         """
@@ -269,7 +283,14 @@ class Stream(object):
         got = Stream(numbers).skip(3).collect()
         assert got == [4, 5, 6, 7, 8, 9]
         """
-        self.enumerate().skip_while(lambda x: x.count < n).map(lambda x: x.element)
+        stream = self._stream
+
+        def inner():
+            for _ in range(n):
+                next(stream)
+            for x in stream:
+                yield x
+        self._stream = inner()
         return self
 
     def skip_while(self, predicate):
@@ -322,7 +343,16 @@ class Stream(object):
         got = Stream(numbers).take(6).collect()
         assert got == [1, 2, 3, 4, 5, 6]
         """
-        self.enumerate().take_while(lambda x: x.count < n).map(lambda x: x.element)
+        stream = self._stream
+
+        def inner():
+            for _ in range(n):
+                try:
+                    yield next(stream)
+                except StopIteration:
+                    break
+        self._stream = inner()
+        self._infinite = False
         return self
 
     def take_while(self, predicate):
@@ -398,10 +428,10 @@ class Stream(object):
             pool = list()
             for x in stream:
                 pool.append(x)
-                if len(pool) is size:
+                if len(pool) == size:
                     yield pool
                     pool = list()
-            if len(pool) is not 0:
+            if len(pool) != 0:
                 yield pool
         self._stream = inner()
         return self
