@@ -64,14 +64,17 @@ matrix:
       before_install:
         - choco install python --version=3.6.8
         - choco install codecov
-        - python --version
-        - python -m pip install --upgrade pip
+        - python3 --version
+        - python3 -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
         - pip3 install --upgrade flake8
       install:
         - pip3 install -r requirements.txt
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -81,14 +84,17 @@ matrix:
       before_install:
         - choco install python --version=3.7.9
         - choco install codecov
-        - python --version
-        - python -m pip install --upgrade pip
+        - python3 --version
+        - python3 -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
         - pip3 install --upgrade flake8
       install:
         - pip3 install -r requirements.txt
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -98,14 +104,17 @@ matrix:
       before_install:
         - choco install python --version=3.8.6
         - choco install codecov
-        - python --version
-        - python -m pip install --upgrade pip
+        - python3 --version
+        - python3 -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
         - pip3 install --upgrade flake8
       install:
         - pip3 install -r requirements.txt
+    script:
+      - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+      - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -115,14 +124,17 @@ matrix:
       before_install:
         - choco install python --version=3.9.0
         - choco install codecov
-        - python --version
-        - python -m pip install --upgrade pip
+        - python3 --version
+        - python3 -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
         - pip3 install --upgrade flake8
       install:
         - pip3 install -r requirements.txt
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -132,14 +144,17 @@ matrix:
       before_install:
         - choco install python --pre
         - choco install codecov
-        - python --version
-        - python -m pip install --upgrade pip
+        - python3 --version
+        - python3 -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
         - pip3 install --upgrade flake8
       install:
         - pip3 install -r requirements.txt
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
