@@ -9,6 +9,8 @@ matrix:
       script:
         - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py
         - flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
+    - python: "3.4"
+    - python: "3.5"
     - python: "3.6"
     - python: "3.7"
     - python: "3.8"

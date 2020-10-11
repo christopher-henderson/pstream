@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pstream",
-    version="0.0.3",
+    version="0.0.4",
     author="Christopher Henderson",
     author_email="chris@chenderson.org",
     description="Provides a Stream and AsyncStream for composing fluent lazily evaluated, stream fusion, iterators.",
