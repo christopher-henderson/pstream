@@ -27,5 +27,5 @@ from .stream import *
 import sys
 
 version = sys.version_info
-if version.major == 3 and version.minor >= 6:
+if version.major == 3 and version.minor >= 4:
     from .async_stream import *
