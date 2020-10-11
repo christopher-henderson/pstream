@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2020 Christopher Henderson
+# Copyright (c) 2020 Christopher Henderson, chris@chenderson.org
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,5 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 from __future__ import absolute_import
 from .stream import *
+
+import sys
+
+version = sys.version_info
+if version.major == 3 and version.minor >= 6:
+    from .async_stream import *

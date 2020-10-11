@@ -15,22 +15,22 @@ def limiter(enumeration):
     or bail early if we manage to get a number that is divisible
     by 100.
     """
-    return enumeration.count <= 1000 or enumeration.element % 100 is not 0
+    return enumeration.count <= 1000 or enumeration.element % 100 != 0
 
 
 def fizz_buzzable(num):
     """
     We're only interested in valid fizz buzz numbers.
     """
-    return num % 3 is 0 or num % 5 is 0
+    return num % 3 == 0 or num % 5 == 0
 
 
 def fizz_buzz(num):
     num = num.element
     print("{}: {}{}".format(
         num,
-        "Fizz" if num % 3 is 0 else "",
-        "Buzz" if num % 5 is 0 else "",
+        "Fizz" if num % 3 == 0 else "",
+        "Buzz" if num % 5 == 0 else "",
     ))
 
 
@@ -39,6 +39,7 @@ def average(accumulator, enumeration):
     #
     # https://math.stackexchange.com/a/106720
     return accumulator + ((enumeration.element - accumulator)/(enumeration.count+1))
+
 
 # Generate random numbers for a game of FizzBuzz until we either
 # have 1000 numbers or we find one that is divisible by 100 flat.

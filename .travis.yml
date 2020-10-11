@@ -6,30 +6,182 @@ language:
 matrix:
   include:
     - python: "2.7"
-    - python: "3.4"
-    - python: "3.5"
+      script:
+        - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py
+        - flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
     - python: "3.6"
     - python: "3.7"
     - python: "3.8"
     - python: "3.9-dev"
-  allow_failures:
-    - python: "3.9-dev"
+    - name: "Python 2.7.10 on Darwin"
+      os: osx
+      osx_image: xcode9.3  # Python 2.7.14_2 running on macOS 10.13
+      language: shell  # 'language: python' errors on Travis CI macOS
+      before_install:
+        - python --version
+        - pip install pytest --user
+        - pip install pip --user
+        - pip install pytest --user
+        - pip install pytest-cov --user
+        - pip install flake8 --user
+      install: pip install ".[test]" --user
+      script:
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py  # pytest command won't be found
+        - python -m flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
+    - name: "Python 3.7.5 on Darwin"
+      os: osx
+      osx_image: xcode10.2  # Python 3.6.5 running on macOS 10.13
+      language: shell  # 'language: python' errors on Travis CI macOS
+      before_install:
+        - python3 --version
+        - pip3 install pytest --user
+        - pip3 install pip --user
+        - pip3 install pytest --user
+        - pip3 install pytest-cov --user
+        - pip3 install flake8 --user
+      install: pip3 install ".[test]" --user
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py  # pytest command won't be found
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+    - name: "Python 3.8.5 on Darwin"
+      os: osx
+      osx_image: xcode11.6
+      language: shell
+      before_install:
+        - python3 --version
+        - pip3 install pytest --user
+        - pip3 install pip --user
+        - pip3 install pytest --user
+        - pip3 install pytest-cov --user
+        - pip3 install flake8 --user
+      install: pip3 install ".[test]" --user
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py  # pytest command won't be found
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+    - name: "Python 2.7.11 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=2.7.11
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip install --upgrade pip
+        - pip install --upgrade pytest
+        - pip install --upgrade pytest-cov
+        - pip install --upgrade flake8
+      script:
+        - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py
+        - flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/tools/python:/c/tools/python/Scripts:$PATH
+    - name: "Python 3.6.8 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.6.8
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.7.9 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.7.9
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+    - name: "Python 3.8.6 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.8.6
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+    - name: "Python 3.9.0 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.9.0
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - name: "Python 3.10.0-a1 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --pre
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python310:/c/Python310/Scripts:$PATH
 
 before_install:
   - python --version
   - pip install -U pip
   - pip install -U pytest
   - pip install -U pytest-cov
-  - pip install codecov
+  - pip install -U flake8
 
 install:
   - pip install -r requirements.txt
 
 script:
-  - pytest --cov=pstream --cov-report=xml tests/*.py
+  - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+  - flake8 pstream tests --extend-ignore=F405,E501,F403,F401
 
 notifications:
   email: false
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+branches:
+  only:
+    - "main"
