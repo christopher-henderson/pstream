@@ -58,6 +58,21 @@ matrix:
       script:
         - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py  # pytest command won't be found
         - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+    - name: "Python 2.7.11 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=2.7.11
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip install --upgrade pip
+        - pip install --upgrade pytest
+        - pip install --upgrade pytest-cov
+        - pip install --upgrade flake8
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python27:/c/Python27/Scripts:$PATH
     - name: "Python 3.6.8 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
