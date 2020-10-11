@@ -70,6 +70,9 @@ matrix:
         - pip install --upgrade pytest
         - pip install --upgrade pytest-cov
         - pip install --upgrade flake8
+      script:
+        - pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/stream_tests.py
+        - flake8 pstream/stream.py tests/stream_tests.py --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/tools/python:/c/tools/python/Scripts:$PATH
