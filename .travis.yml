@@ -64,8 +64,8 @@ matrix:
       before_install:
         - choco install python --version=3.6.8
         - choco install codecov
-        - python3 --version
-        - python3 -m pip install --upgrade pip
+        - python --version
+        - python -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
@@ -81,8 +81,8 @@ matrix:
       before_install:
         - choco install python --version=3.7.9
         - choco install codecov
-        - python3 --version
-        - python3 -m pip install --upgrade pip
+        - python --version
+        - python -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
@@ -98,8 +98,8 @@ matrix:
       before_install:
         - choco install python --version=3.8.6
         - choco install codecov
-        - python3 --version
-        - python3 -m pip install --upgrade pip
+        - python --version
+        - python -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
@@ -115,8 +115,8 @@ matrix:
       before_install:
         - choco install python --version=3.9.0
         - choco install codecov
-        - python3 --version
-        - python3 -m pip install --upgrade pip
+        - python --version
+        - python -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
@@ -132,8 +132,8 @@ matrix:
       before_install:
         - choco install python --pre
         - choco install codecov
-        - python3 --version
-        - python3 -m pip install --upgrade pip
+        - python --version
+        - python -m pip install --upgrade pip
         - pip3 install --upgrade pip
         - pip3 install --upgrade pytest
         - pip3 install --upgrade pytest-cov
