@@ -112,9 +112,9 @@ matrix:
         - pip3 install --upgrade flake8
       install:
         - pip3 install -r requirements.txt
-    script:
-      - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
-      - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+      script:
+        - python3 -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/*.py
+        - python3 -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
