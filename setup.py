@@ -20,5 +20,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=["future>=0.18.2"],
-    python_requires='>=2.6, >=3.6, <4',
+    python_requires='>=2.7, >=3.6, <4',
 )
