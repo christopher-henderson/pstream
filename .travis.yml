@@ -75,8 +75,78 @@ matrix:
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.7.9 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.7.9
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.8.6 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.8.6
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.9.0 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version=3.9.0
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.10.0-a1 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --pre
+        - choco install codecov
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install --upgrade pytest-cov
+        - pip3 install --upgrade flake8
+      install:
+        - pip3 install -r requirements.txt
+      after_success:
+        - codecov.exe -f coverage.xml
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
   allow_failures:
     - python: "3.9-dev"
+    - name: "Python 3.9.0 on Windows"
+    - name: "Python 3.10.0-a1 on Windows"
 
 before_install:
   - python --version
