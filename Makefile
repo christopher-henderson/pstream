@@ -8,7 +8,7 @@ build:
 
 .PHONY: release
 release:
-	python -m twine upload --repository pypi -u __token__ --verbose -p $PYPI_TOKEN dist/*
+	python -m twine upload --repository pypi -u __token__ --verbose -p ${PYPI_TOKEN} dist/*
 
 .PHONY: test
 test:
