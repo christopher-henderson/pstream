@@ -19,8 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-from . import InfiniteCollectionError
+from .defensive import must_be_callable
+from .errors import InfiniteCollectionError
 from .functors import *
 
 
@@ -53,6 +53,7 @@ class AsyncStream:
         self.stream = distinct(self.stream)
         return self
 
+    @must_be_callable
     def distinct_with(self, f):
         self.stream = distinct_with(f, self.stream)
         return self
@@ -65,10 +66,12 @@ class AsyncStream:
         self.stream = flatten(self.stream)
         return self
 
+    @must_be_callable
     def filter(self, predicate):
         self.stream = filter(predicate, self.stream)
         return self
 
+    @must_be_callable
     async def for_each(self, f):
         if iscoroutinefunction(f):
             async for x in self:
@@ -77,10 +80,12 @@ class AsyncStream:
             async for x in self:
                 f(x)
 
+    @must_be_callable
     def inspect(self, f):
         self.stream = inspect(f, self.stream)
         return self
 
+    @must_be_callable
     def map(self, f):
         self.stream = map(f, self.stream)
         return self
@@ -95,6 +100,7 @@ class AsyncStream:
         self.stream = skip(num, self.stream)
         return self
 
+    @must_be_callable
     def skip_while(self, predicate):
         self.stream = skip_while(predicate, self.stream)
         return self
@@ -110,7 +116,8 @@ class AsyncStream:
             raise ValueError("step_by must be a positive integer, received {}".format(step))
         return self.enumerate().filter(lambda e: e.count % step == 0).map(lambda e: e.element)
 
-    async def reduce(self, accumulator, f):
+    @must_be_callable
+    async def reduce(self, f, accumulator):
         if iscoroutinefunction(f):
             async for x in self:
                 accumulator = await f(accumulator, x)
@@ -133,6 +140,7 @@ class AsyncStream:
         self._infinite = False
         return self
 
+    @must_be_callable
     def take_while(self, predicate):
         self.stream = take_while(predicate, self.stream)
         self._infinite = False

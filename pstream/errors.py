@@ -20,10 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class InfiniteCollectionError(Exception):
+class InfiniteCollectionError(ValueError):
 
     def __init__(self, method):
-        super(InfiniteCollectionError, self).__init__('Stream.{} was called on an infinitely repeating iterator. '
+        super(InfiniteCollectionError, self).__init__('{} was called on an infinitely repeating iterator. '
                                                       'If you uses Stream.repeat, then you MUST include either a '
                                                       'Stream.take or a Stream.take_while if you wish to '
                                                       'call {}'.format(method, method))
+
+
+class NotCallableError(ValueError):
+
+    def __init__(self, method, received):
+        super(NotCallableError, self).__init__('{} requires a callable. Received {}'.format(method, type(received)))

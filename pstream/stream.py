@@ -33,6 +33,8 @@ from builtins import zip
 from builtins import reversed
 from builtins import sorted
 
+from .defensive import must_be_callable
+
 try:
     # Py3
     from collections.abc import Iterator, Iterable
@@ -41,7 +43,7 @@ except ImportError:
     from collections import Iterator, Iterable
 from collections import namedtuple
 
-from .errors import InfiniteCollectionError
+from .errors import InfiniteCollectionError, NotCallableError
 
 
 class Stream(object):
@@ -108,6 +110,7 @@ class Stream(object):
         self._stream = inner()
         return self
 
+    @must_be_callable
     def distinct_with(self, f):
         """
         Returns an iterator that is distinct. Distinction is computed by applying the provided function `f` to each
@@ -147,6 +150,7 @@ class Stream(object):
         self._stream = enumerate(self._stream)
         return self.map(lambda enumeration: Stream.Enumeration(*enumeration))
 
+    @must_be_callable
     def filter(self, predicate):
         """
         Returns an iterator that filters each element with `predicate`.
@@ -181,6 +185,7 @@ class Stream(object):
         self._stream = (x for stream in self._stream for x in stream)
         return self
 
+    @must_be_callable
     def for_each(self, f):
         """
         Evaluates the stream, consuming it and calling f for each element in the stream.
@@ -200,6 +205,7 @@ class Stream(object):
         for x in self:
             f(x)
 
+    @must_be_callable
     def inspect(self, f):
         """
         Returns an iterator that calls the function, `f`, with a reference to each element before yielding it.
@@ -226,6 +232,7 @@ class Stream(object):
         self._stream = inner()
         return self
 
+    @must_be_callable
     def map(self, f):
         """
         Returns an iterator that maps each value with `f`.
@@ -238,7 +245,8 @@ class Stream(object):
         self._stream = map(f, self._stream)
         return self
 
-    def reduce(self, accumulator, f):
+    @must_be_callable
+    def reduce(self, f, accumulator):
         """
         Collects the stream and applies the function `f` to each item in the stream, producing a single value.
 
@@ -251,7 +259,7 @@ class Stream(object):
             return a + b
 
         numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        got = Stream(numbers).reduce(0, add)
+        got = Stream(numbers).reduce(add, 0)
         assert got = 45
         """
         return functools.reduce(f, self, accumulator)
@@ -293,6 +301,7 @@ class Stream(object):
         self._stream = inner()
         return self
 
+    @must_be_callable
     def skip_while(self, predicate):
         """
         Returns an iterator that rejects elements while `predicate` returns `True`.
@@ -355,6 +364,7 @@ class Stream(object):
         self._infinite = False
         return self
 
+    @must_be_callable
     def take_while(self, predicate):
         """
         Returns an iterator that only accepts elements while `predicate` returns `True`.
@@ -446,6 +456,7 @@ class Stream(object):
         """
         return self.repeat_with(lambda: element)
 
+    @must_be_callable
     def repeat_with(self, f):
         """
         Returns an iterator the yields the output of `f` endlessly.
