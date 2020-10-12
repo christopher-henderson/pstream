@@ -20,9 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .defensive import must_be_callable
-from .errors import InfiniteCollectionError
-from .functors import *
+from pstream.utils.defensive import must_be_callable
+from pstream.errors import InfiniteCollectionError
+from pstream.async_stream.functors import *
 
 
 class AsyncStream:
