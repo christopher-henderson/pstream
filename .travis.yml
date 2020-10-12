@@ -64,7 +64,7 @@ matrix:
         - pip install --upgrade pytest-cov
         - pip install --upgrade flake8
       script:
-        - make.exe testpy2
+        - make testpy2
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/tools/python:/c/tools/python/Scripts:$PATH
@@ -84,7 +84,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - make.exe test
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -104,7 +105,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - make.exe test
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
@@ -124,7 +126,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - make.exe test
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
@@ -144,7 +147,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - make.exe test
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
@@ -164,7 +168,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - make.exe test
+        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python310:/c/Python310/Scripts:$PATH
