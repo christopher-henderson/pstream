@@ -33,7 +33,7 @@ from builtins import zip
 from builtins import reversed
 from builtins import sorted
 
-from .defensive import must_be_callable
+from pstream.utils.defensive import must_be_callable
 
 try:
     # Py3
@@ -43,7 +43,7 @@ except ImportError:
     from collections import Iterator, Iterable
 from collections import namedtuple
 
-from .errors import InfiniteCollectionError, NotCallableError
+from pstream.errors import InfiniteCollectionError
 
 
 class Stream(object):

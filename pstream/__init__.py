@@ -22,10 +22,10 @@
 
 
 from __future__ import absolute_import
-from .stream import Stream
+from .stream.stream import Stream
 
 import sys
 
 version = sys.version_info
 if version.major == 3 and version.minor >= 6:
-    from .async_stream import AsyncStream, AsyncIterator
+    from .async_stream.async_stream import AsyncStream, AsyncIterator
