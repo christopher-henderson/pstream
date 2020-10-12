@@ -20,16 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class InfiniteCollectionError(ValueError):
+from functools import wraps
 
-    def __init__(self, method):
-        super(InfiniteCollectionError, self).__init__('{} was called on an infinitely repeating iterator. '
-                                                      'If you uses Stream.repeat, then you MUST include either a '
-                                                      'Stream.take or a Stream.take_while if you wish to '
-                                                      'call {}'.format(method, method))
+from pstream.errors import NotCallableError
 
 
-class NotCallableError(ValueError):
-
-    def __init__(self, method, received):
-        super(NotCallableError, self).__init__('{} requires a callable. Received {}'.format(method, type(received)))
+def must_be_callable(fn):
+    @wraps(fn)
+    def inner(self, f, *args):
+        if not callable(f):
+            raise NotCallableError(fn.__qualname__ if hasattr(fn, '__qualname__') else fn.__name__, f)
+        return fn(self, f, *args)
+    return inner

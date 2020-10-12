@@ -28,7 +28,7 @@ from builtins import zip as builtin_zip
 from functools import wraps
 
 from pstream import AsyncStream
-from pstream import InfiniteCollectionError
+from pstream.errors import InfiniteCollectionError, NotCallableError
 
 
 def run_to_completion(f):
@@ -328,7 +328,7 @@ class TestAsyncAsyncStream(unittest.TestCase):
         def add(a, b):
             return a + b
         numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        got = await AsyncStream(numbers).reduce(0, add)
+        got = await AsyncStream(numbers).reduce(add, 0)
         assert got == 45
 
     @run_to_completion
@@ -336,7 +336,7 @@ class TestAsyncAsyncStream(unittest.TestCase):
         def add(a, b):
             return a + b
         numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        got = await AsyncStream(numbers).reduce(0, async_lambda(add))
+        got = await AsyncStream(numbers).reduce(async_lambda(add), 0)
         assert got == 45
 
     @run_to_completion
