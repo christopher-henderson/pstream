@@ -24,6 +24,8 @@ from collections.abc import Iterable, Iterator
 from collections import namedtuple
 from inspect import iscoroutinefunction
 
+from .._sync.stream import Stream
+Enumeration = Stream.Enumeration
 
 # @TODO heck yeah! Typing!
 # import typing
@@ -46,7 +48,7 @@ class AsyncIterator:
             self.stream = (x for x in stream)
         else:
             raise ValueError(
-                'pstream.AsyncStream can only accept either an async iterator, an iterator, or an iterable. Got {}'.format(type(stream)))
+                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(type(stream)))
 
     def __aiter__(self):
         return self
@@ -121,6 +123,24 @@ class SyncFilter(HigherOrder):
         while True:
             x = await self.stream.__anext__()
             if self.f(x):
+                return x
+
+
+class AsyncFilterFalse(HigherOrder):
+
+    async def __anext__(self):
+        while True:
+            x = await self.stream.__anext__()
+            if not await self.f(x):
+                return x
+
+
+class SyncFilterFalse(HigherOrder):
+
+    async def __anext__(self):
+        while True:
+            x = await self.stream.__anext__()
+            if not self.f(x):
                 return x
 
 
@@ -222,8 +242,6 @@ class SyncTakeWhile(HigherOrder):
 
 class Enumerate(Functor):
 
-    Enumeration = namedtuple("Enumeration", ["count", "element"])
-
     def __init__(self, stream):
         super(Enumerate, self).__init__(stream)
         self.count = 0
@@ -232,7 +250,7 @@ class Enumerate(Functor):
         element = await self.stream.__anext__()
         count = self.count
         self.count += 1
-        return Enumerate.Enumeration(count, element)
+        return Enumeration(count, element)
 
 
 class Skip(Functor):
@@ -372,6 +390,7 @@ distinct = Distinct
 distinct_with = HigherOrder.Factory(AsyncDistinctWith, SyncDistinctWith)
 map = HigherOrder.Factory(AsyncMap, SyncMap)
 filter = HigherOrder.Factory(AsyncFilter, SyncFilter)
+filter_false = HigherOrder.Factory(AsyncFilterFalse, SyncFilterFalse)
 flatten = Flatten
 inspect = HigherOrder.Factory(AsyncInspect, SyncInspect)
 skip_while = HigherOrder.Factory(AsyncSkipWhile, SyncSkipWhile)

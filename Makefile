@@ -18,4 +18,4 @@ test:
 .PHONY: testpy2
 testpy2:
 	python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests/sync
-	python -m flake8 pstream/stream/*.py pstream/utils/*.py pstream/errors.py tests/sync/*.py --extend-ignore=F405,E501,F403,F401
+	python -m flake8 pstream/_sync/*.py pstream/utils/*.py pstream/errors.py tests/sync/*.py --extend-ignore=F405,E501,F403,F401
