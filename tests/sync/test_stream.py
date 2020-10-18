@@ -107,6 +107,9 @@ class TestStream(unittest.TestCase):
     def test_filter(self):
         self.assertEqual(Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).collect(), [2, 4])
 
+    def test_filter_false(self):
+        self.assertEqual(Stream([1, 2, 3, 4]).filter_false(lambda x: x % 2 == 0).collect(), [1, 3])
+
     @expect(NotCallableError)
     def test_filter_bad(self):
         Stream().filter(None)
@@ -281,6 +284,11 @@ class TestStream(unittest.TestCase):
         arr = [12, 233, 4567, 344523, 7, 567, 34, 5678, 456, 23, 4, 7, 63, 45, 345]
         got = Stream(arr).sort().collect()
         self.assertEqual(got, [4, 7, 7, 12, 23, 34, 45, 63, 233, 345, 456, 567, 4567, 5678, 344523])
+
+    def test_sort_with(self):
+        arr = ['12', '233', '4567', '344523', '7', '567', '34', '5678', '456', '23', '4', '7', '63', '45', '345']
+        got = Stream(arr).sort_with(len).collect()
+        self.assertEqual(got, ['7', '4', '7', '12', '34', '23', '63', '45', '233', '567', '456', '345', '4567', '5678', '344523'])
 
     def test_sort_complex(self):
         # sort and reverse incur collections, and sort itself returns a physical list rather than

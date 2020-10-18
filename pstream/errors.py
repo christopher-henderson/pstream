@@ -21,15 +21,14 @@
 # SOFTWARE.
 
 class InfiniteCollectionError(ValueError):
-
     def __init__(self, method):
+        name = method.__qualname__ if hasattr(method, '__qualname__') else method.__name__
         super(InfiniteCollectionError, self).__init__('{} was called on an infinitely repeating iterator. '
-                                                      'If you uses Stream.repeat, then you MUST include either a '
+                                                      'If you use Stream.repeat, then you MUST include either a '
                                                       'Stream.take or a Stream.take_while if you wish to '
-                                                      'call {}'.format(method, method))
+                                                      'call {}'.format(name, name))
 
 
 class NotCallableError(ValueError):
-
     def __init__(self, method, received):
         super(NotCallableError, self).__init__('{} requires a callable. Received {}'.format(method, type(received)))

@@ -18,7 +18,6 @@ matrix:
       language: shell  # 'language: python' errors on Travis CI macOS
       before_install:
         - python --version
-        - pip install pytest --user
         - pip install pip --user
         - pip install pytest --user
         - pip install pytest-cov --user
@@ -32,7 +31,6 @@ matrix:
       language: shell  # 'language: python' errors on Travis CI macOS
       before_install:
         - python3 --version
-        - pip3 install pytest --user
         - pip3 install pip --user
         - pip3 install pytest --user
         - pip3 install pytest-cov --user
@@ -44,7 +42,6 @@ matrix:
       language: shell
       before_install:
         - python3 --version
-        - pip3 install pytest --user
         - pip3 install pip --user
         - pip3 install pytest --user
         - pip3 install pytest-cov --user

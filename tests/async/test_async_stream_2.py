@@ -147,6 +147,10 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
         self.assertEqual(await AsyncStream(AI([1, 2, 3, 4])).filter(lambda x: x % 2 == 0).collect(), [2, 4])
 
     @run_to_completion
+    async def test_filter_false(self):
+        self.assertEqual(await AsyncStream([1, 2, 3, 4]).filter_false(async_lambda(lambda x: x % 2 == 0)).collect(), [1, 3])
+
+    @run_to_completion
     async def test_filter_empty(self):
         self.assertEqual(await AsyncStream(AI([])).filter(lambda x: x % 2 == 0).collect(), [])
 
