@@ -430,6 +430,10 @@ class TestAsyncAsyncStream(unittest.TestCase):
         self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip(4).collect(), [5, 6, 7, 8, 9])
 
     @run_to_completion
+    async def test_skip_more_than_there_are(self):
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip(20).collect(), [5, 6, 7, 8, 9])
+
+    @run_to_completion
     async def test_skip_while(self):
         self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(lambda x: x < 5).collect(),
                          [5, 6, 7, 8, 9])
