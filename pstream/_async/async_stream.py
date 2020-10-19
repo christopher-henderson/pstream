@@ -265,7 +265,7 @@ class AsyncStream:
         ...   print(input())  # doctest: +SKIP
 
         :param f: A function such that `f(element)`. Any value returned is ignored. `f` may be either asynchronous or
-                            synchronous.
+                    synchronous.
 
         :Example:
         >>> await AsyncStream(range(1, 5)).for_each(print)
@@ -280,6 +280,46 @@ class AsyncStream:
         else:
             async for x in self:
                 f(x)
+
+    @must_be_callable
+    def group_by(self, key):
+        """
+        Returns a stream that groups elements together using the provided `key` function.
+
+        The ordering of the groups is non-deterministic.
+
+        :param key: A function such that `f(element) -> T` where `T` will be used to group elements together. `key`
+                    may be either asynchronous or synchronous.
+
+        :Returns: :class:`AsyncStream`
+
+        :Example:
+        >>> # Group people by how long their names are.
+        >>> names = ['Alice', 'Bob', 'Eve', 'Chris', 'Arjuna', 'Zack']
+        >>> got = await AsyncStream(names).group_by(len).collect()
+        >>> len(got) == 4
+        True
+        >>> ['Alice', 'Chris'] in got
+        True
+        >>> ['Bob', 'Eve'] in got
+        True
+        >>> ['Arjuna'] in got
+        True
+        >>> ['Zack'] in got
+        True
+
+        :Example:
+        >>> # Group the numbers [0, 10) by evens and odds.
+        >>> got = await AsyncStream(range(10)).group_by(lambda x: x % 2).collect()
+        >>> len(got) == 2
+        True
+        >>> [1, 3, 5, 7, 9] in got
+        True
+        >>> [0, 2, 4, 6, 8] in got
+        True
+        """
+        self.stream = group_by(key, self.stream)
+        return self
 
     @must_be_callable
     def inspect(self, f):

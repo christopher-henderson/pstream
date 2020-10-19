@@ -169,6 +169,25 @@ class TestStream(unittest.TestCase):
         Stream().for_each(called)
         self.assertFalse(called.called)
 
+    def test_group_by(self):
+        numbers = ['1', '12', '2', '22', '1002', '100', '1001']
+        got = Stream(numbers).group_by(len).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    def test_group_by2(self):
+        got = Stream(range(10)).group_by(lambda x: x % 2).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
+
+    def test_group_by_empty(self):
+        got = Stream().group_by(len).collect()
+        self.assertEqual(got, [])
+
     def test_inspect(self):
         inspector = TestStream.Inspector()
         got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).inspect(inspector.visit).collect()

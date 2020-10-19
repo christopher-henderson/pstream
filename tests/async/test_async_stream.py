@@ -27,7 +27,7 @@ import unittest
 from builtins import zip as builtin_zip
 from functools import wraps
 
-from pstream import AsyncStream
+from pstream import AsyncStream, AsyncIterator
 from pstream.errors import InfiniteCollectionError, NotCallableError
 
 
@@ -85,6 +85,16 @@ class TestAsyncAsyncStream(unittest.TestCase):
     @run_to_completion
     async def test_chain_multiple(self):
         self.assertEqual(await AsyncStream([1, 2, 3]).chain([4, 5, 6], [7, 8, 9]).collect(),
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_chain_multiple_with_async(self):
+        self.assertEqual(await AsyncStream([1, 2, 3]).chain(AsyncIterator.new([4, 5, 6]), [7, 8, 9]).collect(),
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_chain_multiple_with_async2(self):
+        self.assertEqual(await AsyncStream([1, 2, 3]).chain([4, 5, 6], AsyncIterator.new([7, 8, 9])).collect(),
                          [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     @run_to_completion
@@ -242,6 +252,40 @@ class TestAsyncAsyncStream(unittest.TestCase):
         called = Called()
         await AsyncStream().for_each(async_lambda(called))
         self.assertFalse(called.called)
+
+    @run_to_completion
+    async def test_group_by(self):
+        numbers = ['1', '12', '2', '22', '1002', '100', '1001']
+        got = await AsyncStream(numbers).group_by(len).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    @run_to_completion
+    async def test_group_by2(self):
+        got = await AsyncStream(range(10)).group_by(lambda x: x % 2).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
+
+    @run_to_completion
+    async def test_group_by_a(self):
+        numbers = ['1', '12', '2', '22', '1002', '100', '1001']
+        got = await AsyncStream(numbers).group_by(async_lambda(len)).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    @run_to_completion
+    async def test_group_by2_a(self):
+        got = await AsyncStream(range(10)).group_by(async_lambda(lambda x: x % 2)).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
 
     @run_to_completion
     async def test_inspect(self):

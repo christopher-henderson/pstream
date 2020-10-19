@@ -33,7 +33,8 @@ from builtins import zip
 from builtins import reversed
 from builtins import sorted
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
+
 try:
     # Py3
     from collections.abc import Iterator, Iterable
@@ -297,6 +298,52 @@ class Stream(object):
         """
         for x in self:
             f(x)
+
+    def group_by(self, key):
+        """
+        Returns a stream that groups elements together using the provided `key` function.
+
+        The ordering of the groups is non-deterministic.
+
+        :param key: A function such that `f(element) -> T` where `T` will be used to group elements together.
+
+        :Returns: :class:`Stream`
+
+        :Example:
+        >>> # Group people by how long their names are.
+        >>> names = ['Alice', 'Bob', 'Eve', 'Chris', 'Arjuna', 'Zack']
+        >>> got = Stream(names).group_by(len).collect()
+        >>> len(got) == 4
+        True
+        >>> ['Alice', 'Chris'] in got
+        True
+        >>> ['Bob', 'Eve'] in got
+        True
+        >>> ['Arjuna'] in got
+        True
+        >>> ['Zack'] in got
+        True
+
+        :Example:
+        >>> # Group the numbers [0, 10) by evens and odds.
+        >>> got = Stream(range(10)).group_by(lambda x: x % 2).collect()
+        >>> len(got) == 2
+        True
+        >>> [1, 3, 5, 7, 9] in got
+        True
+        >>> [0, 2, 4, 6, 8] in got
+        True
+        """
+        stream = self._stream
+
+        def inner():
+            m = defaultdict(list)
+            for element in stream:
+                m[key(element)].append(element)
+            for grouping in m.values():
+                yield grouping
+        self._stream = inner()
+        return self
 
     @must_be_callable
     def inspect(self, f):
