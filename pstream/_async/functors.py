@@ -204,10 +204,9 @@ class Repeat(Functor):
 class SyncInspect(HigherOrder):
 
     async def __anext__(self):
-        while True:
-            x = await self.stream.__anext__()
-            self.f(x)
-            return x
+        x = await self.stream.__anext__()
+        self.f(x)
+        return x
 
 
 class AsyncSkipWhile(HigherOrder):
