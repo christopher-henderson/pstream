@@ -540,7 +540,7 @@ class TestAsyncAsyncStream(unittest.TestCase):
         self.assertEqual(await AsyncStream(data[0]).zip(data[1]).collect(), [_ for _ in builtin_zip(*data)])
 
     @run_to_completion
-    async def test_zip(self):
+    async def test_zip_map(self):
         data = ((0, 1, 2), (3, 4, 5))
         got = await AsyncStream(data[0]).zip(data[1]).map(lambda x: x[0]).collect()
         self.assertEqual(got, [0, 1, 2])
