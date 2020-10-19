@@ -540,6 +540,12 @@ class TestAsyncAsyncStream(unittest.TestCase):
         self.assertEqual(await AsyncStream(data[0]).zip(data[1]).collect(), [_ for _ in builtin_zip(*data)])
 
     @run_to_completion
+    async def test_zip(self):
+        data = ((0, 1, 2), (3, 4, 5))
+        got = await AsyncStream(data[0]).zip(data[1]).map(lambda x: x[0]).collect()
+        self.assertEqual(got, [0, 1, 2])
+
+    @run_to_completion
     async def test_zip_different_sizes_left(self):
         data = ((0, 1), (3, 4, 5))
         self.assertEqual(await AsyncStream(data[0]).zip(data[1]).collect(), [_ for _ in builtin_zip(*data)])
@@ -588,6 +594,15 @@ class TestAsyncAsyncStream(unittest.TestCase):
     async def test_zip_different_single_middle(self):
         data = ((0, 1, 2), (3,), (6, 7, 8))
         self.assertEqual(await AsyncStream(data[0]).zip(data[1], data[2]).collect(), [_ for _ in builtin_zip(*data)])
+
+    @run_to_completion
+    async def test_zip_iter(self):
+        from pstream._async.functors import zip
+        z = zip([1, 2, 3], [4, 5, 6])
+        collect = list()
+        async for x in z:
+            collect.append(x)
+        self.assertEqual(collect, [(1, 4), (2, 5), (3, 6)])
 
 
 if __name__ == '__main__':
