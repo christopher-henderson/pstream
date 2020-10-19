@@ -285,15 +285,15 @@ class Skip(Functor):
 class Take(Functor):
 
     def __init__(self, limit, stream):
-        super(Take, self).__init__(stream)
-        self.limit = limit
-        self.count = 0
+        super(Take, self).__init__(self.take(limit, stream))
 
-    async def __anext__(self):
-        if self.count >= self.limit:
-            raise StopAsyncIteration
-        self.count += 1
-        return await self.stream.__anext__()
+    @staticmethod
+    async def take(limit, stream):
+        for _ in range(limit):
+            try:
+                yield await stream.__anext__()
+            except StopAsyncIteration:
+                break
 
 
 class Zip:
@@ -311,14 +311,14 @@ class Zip:
 class Pool(Functor):
 
     def __init__(self, size, stream):
-        super(Pool, self).__init__(self.pool(stream))
-        self.size = size
+        super(Pool, self).__init__(self.pool(size, stream))
 
-    async def pool(self, stream):
+    @staticmethod
+    async def pool(size, stream):
         p = list()
         async for x in stream:
             p.append(x)
-            if len(p) == self.size:
+            if len(p) == size:
                 yield p
                 p = list()
         if len(p) != 0:
@@ -329,7 +329,6 @@ class Sort(Functor):
 
     def __init__(self, stream):
         super(Sort, self).__init__(self.sort(stream))
-        # self._next = self._lazy_init
 
     @staticmethod
     async def sort(stream):
