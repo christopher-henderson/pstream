@@ -278,7 +278,7 @@ class Skip(Functor):
     async def skip(limit, stream):
         for _ in range(limit):
             try:
-                yield await stream.__anext__()
+                await stream.__anext__()
             except StopAsyncIteration:
                 break
         async for element in stream:
