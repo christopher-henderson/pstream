@@ -27,7 +27,7 @@ import unittest
 from builtins import zip as builtin_zip
 from functools import wraps
 
-from pstream import AsyncStream
+from pstream import AsyncStream, AsyncIterator
 from pstream.errors import InfiniteCollectionError, NotCallableError
 
 
@@ -85,6 +85,16 @@ class TestAsyncAsyncStream(unittest.TestCase):
     @run_to_completion
     async def test_chain_multiple(self):
         self.assertEqual(await AsyncStream([1, 2, 3]).chain([4, 5, 6], [7, 8, 9]).collect(),
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_chain_multiple_with_async(self):
+        self.assertEqual(await AsyncStream([1, 2, 3]).chain(AsyncIterator.new([4, 5, 6]), [7, 8, 9]).collect(),
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_chain_multiple_with_async2(self):
+        self.assertEqual(await AsyncStream([1, 2, 3]).chain([4, 5, 6], AsyncIterator.new([7, 8, 9])).collect(),
                          [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     @run_to_completion
@@ -244,6 +254,40 @@ class TestAsyncAsyncStream(unittest.TestCase):
         self.assertFalse(called.called)
 
     @run_to_completion
+    async def test_group_by(self):
+        numbers = ['1', '12', '2', '22', '1002', '100', '1001']
+        got = await AsyncStream(numbers).group_by(len).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    @run_to_completion
+    async def test_group_by2(self):
+        got = await AsyncStream(range(10)).group_by(lambda x: x % 2).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
+
+    @run_to_completion
+    async def test_group_by_a(self):
+        numbers = ['1', '12', '2', '22', '1002', '100', '1001']
+        got = await AsyncStream(numbers).group_by(async_lambda(len)).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    @run_to_completion
+    async def test_group_by2_a(self):
+        got = await AsyncStream(range(10)).group_by(async_lambda(lambda x: x % 2)).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
+
+    @run_to_completion
     async def test_inspect(self):
         inspector = self.Inspector()
         got = await AsyncStream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).inspect(inspector.visit).collect()
@@ -386,9 +430,21 @@ class TestAsyncAsyncStream(unittest.TestCase):
         self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip(4).collect(), [5, 6, 7, 8, 9])
 
     @run_to_completion
+    async def test_skip_more_than_there_are(self):
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip(20).collect(), [])
+
+    @run_to_completion
     async def test_skip_while(self):
         self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(lambda x: x < 5).collect(),
                          [5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_skip_while_never_make_it(self):
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(lambda x: True).collect(), [])
+
+    @run_to_completion
+    async def test_skip_while_never_make_it_async(self):
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(async_lambda(lambda x: True)).collect(), [])
 
     @run_to_completion
     async def test_skip_while_async(self):
@@ -496,6 +552,12 @@ class TestAsyncAsyncStream(unittest.TestCase):
         self.assertEqual(await AsyncStream(data[0]).zip(data[1]).collect(), [_ for _ in builtin_zip(*data)])
 
     @run_to_completion
+    async def test_zip_map(self):
+        data = ((0, 1, 2), (3, 4, 5))
+        got = await AsyncStream(data[0]).zip(data[1]).map(lambda x: x[0]).collect()
+        self.assertEqual(got, [0, 1, 2])
+
+    @run_to_completion
     async def test_zip_different_sizes_left(self):
         data = ((0, 1), (3, 4, 5))
         self.assertEqual(await AsyncStream(data[0]).zip(data[1]).collect(), [_ for _ in builtin_zip(*data)])
@@ -544,6 +606,15 @@ class TestAsyncAsyncStream(unittest.TestCase):
     async def test_zip_different_single_middle(self):
         data = ((0, 1, 2), (3,), (6, 7, 8))
         self.assertEqual(await AsyncStream(data[0]).zip(data[1], data[2]).collect(), [_ for _ in builtin_zip(*data)])
+
+    @run_to_completion
+    async def test_zip_iter(self):
+        from pstream._async.functors import zip
+        z = zip([1, 2, 3], [4, 5, 6])
+        collect = list()
+        async for x in z:
+            collect.append(x)
+        self.assertEqual(collect, [(1, 4), (2, 5), (3, 6)])
 
 
 if __name__ == '__main__':

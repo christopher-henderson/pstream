@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 from collections.abc import Iterable, Iterator
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from inspect import iscoroutinefunction
 
 from .._sync.stream import Stream
@@ -63,7 +63,7 @@ class AsyncIterator:
 class Functor:
 
     def __init__(self, stream):
-        self.stream = stream
+        self.stream = AsyncIterator.new(stream)
 
     def __aiter__(self):
         return self
@@ -76,14 +76,14 @@ class HigherOrder(Functor):
 
     class Factory:
 
-        def __init__(self, async_class, sync):
+        def __init__(self, async_class, sync_class):
             self.async_class = async_class
-            self.sync = sync
+            self.sync_class = sync_class
 
         def __call__(self, f, stream):
             if iscoroutinefunction(f):
                 return self.async_class(f, stream)
-            return self.sync(f, stream)
+            return self.sync_class(f, stream)
 
     def __init__(self, f, stream):
         super(HigherOrder, self).__init__(stream)
@@ -93,7 +93,7 @@ class HigherOrder(Functor):
 class Chain(Functor):
 
     def __init__(self, *streams):
-        super(Chain, self).__init__(flatten(AsyncIterator.new((s for s in streams))))
+        super(Chain, self).__init__(flatten((s for s in streams)))
 
 
 class AsyncMap(HigherOrder):
@@ -147,15 +147,39 @@ class SyncFilterFalse(HigherOrder):
 class Flatten(Functor):
 
     def __init__(self, stream):
-        super(Flatten, self).__init__(stream)
-        self._next = self._lazy_init
+        super(Flatten, self).__init__(self.flatten(stream))
 
-    async def __anext__(self):
-        return await self._next()
+    @staticmethod
+    async def flatten(streams):
+        async for stream in AsyncIterator.new(streams):
+            async for element in AsyncIterator.new(stream):
+                yield element
 
-    async def _lazy_init(self):
-        self._next = (x async for stream in self.stream async for x in AsyncIterator.new(stream)).__anext__
-        return await self.__anext__()
+
+class AsyncGroupBy(HigherOrder):
+
+    def __init__(self, f, stream):
+        super(AsyncGroupBy, self).__init__(f, self.group(stream))
+
+    async def group(self, stream):
+        m = defaultdict(list)
+        async for element in stream:
+            m[await self.f(element)].append(element)
+        for element in m.values():
+            yield element
+
+
+class SyncGroupBy(HigherOrder):
+
+    def __init__(self, f, stream):
+        super(SyncGroupBy, self).__init__(f, self.group(stream))
+
+    async def group(self, stream):
+        m = defaultdict(list)
+        async for element in stream:
+            m[self.f(element)].append(element)
+        for element in m.values():
+            yield element
 
 
 class AsyncInspect(HigherOrder):
@@ -164,33 +188,6 @@ class AsyncInspect(HigherOrder):
         while True:
             x = await self.stream.__anext__()
             await self.f(x)
-            return x
-
-
-class SyncInspect(HigherOrder):
-
-    async def __anext__(self):
-        while True:
-            x = await self.stream.__anext__()
-            self.f(x)
-            return x
-
-
-class AsyncSkipWhile(HigherOrder):
-
-    def __init__(self, f, stream):
-        super(AsyncSkipWhile, self).__init__(f, stream)
-        self._next = self.__next
-
-    async def __anext__(self):
-        return await self._next()
-
-    async def __next(self):
-        while True:
-            x = await self.stream.__anext__()
-            if await self.f(x):
-                continue
-            self._next = self.stream.__anext__
             return x
 
 
@@ -204,22 +201,41 @@ class Repeat(Functor):
         return self.element
 
 
+class SyncInspect(HigherOrder):
+
+    async def __anext__(self):
+        x = await self.stream.__anext__()
+        self.f(x)
+        return x
+
+
+class AsyncSkipWhile(HigherOrder):
+
+    def __init__(self, f, stream):
+        self._inner = stream
+        super(AsyncSkipWhile, self).__init__(f, self.skip_while(stream))
+
+    async def skip_while(self, stream):
+        async for element in stream:
+            if not await self.f(element):
+                yield element
+                break
+        async for element in stream:
+            yield element
+
+
 class SyncSkipWhile(HigherOrder):
 
     def __init__(self, f, stream):
-        super(SyncSkipWhile, self).__init__(f, stream)
-        self._next = self.__next
+        super(SyncSkipWhile, self).__init__(f, self.skip_while(stream))
 
-    async def __anext__(self):
-        return await self._next()
-
-    async def __next(self):
-        while True:
-            x = await self.stream.__anext__()
-            if self.f(x):
-                continue
-            self._next = self.stream.__anext__
-            return x
+    async def skip_while(self, stream):
+        async for element in stream:
+            if not self.f(element):
+                yield element
+                break
+        async for element in stream:
+            yield element
 
 
 class AsyncTakeWhile(HigherOrder):
@@ -256,38 +272,40 @@ class Enumerate(Functor):
 class Skip(Functor):
 
     def __init__(self, limit: int, stream):
-        super(Skip, self).__init__(stream)
-        self._limit = limit
-        self._next = self._consume
+        super(Skip, self).__init__(self.skip(limit, stream))
 
-    async def __anext__(self):
-        return await self._next()
-
-    async def _consume(self):
-        for _ in range(self._limit):
-            await self.stream.__anext__()
-        self._next = self.stream.__anext__
-        return await self.__anext__()
+    @staticmethod
+    async def skip(limit, stream):
+        for _ in range(limit):
+            try:
+                await stream.__anext__()
+            except StopAsyncIteration:
+                break
+        async for element in stream:
+            yield element
 
 
 class Take(Functor):
 
     def __init__(self, limit, stream):
-        super(Take, self).__init__(stream)
-        self.limit = limit
-        self.count = 0
+        super(Take, self).__init__(self.take(limit, stream))
 
-    async def __anext__(self):
-        if self.count >= self.limit:
-            raise StopAsyncIteration
-        self.count += 1
-        return await self.stream.__anext__()
+    @staticmethod
+    async def take(limit, stream):
+        for _ in range(limit):
+            try:
+                yield await stream.__anext__()
+            except StopAsyncIteration:
+                break
 
 
-class Zip(Functor):
+class Zip:
 
     def __init__(self, *streams):
-        super(Zip, self).__init__([AsyncIterator.new(s) for s in streams])
+        self.stream = [AsyncIterator.new(s) for s in streams]
+
+    def __aiter__(self):
+        return self
 
     async def __anext__(self):
         return tuple([await s.__anext__() for s in self.stream])
@@ -296,46 +314,40 @@ class Zip(Functor):
 class Pool(Functor):
 
     def __init__(self, size, stream):
-        super(Pool, self).__init__(stream)
-        self.size = size
+        super(Pool, self).__init__(self.pool(size, stream))
 
-    async def __anext__(self):
+    @staticmethod
+    async def pool(size, stream):
         p = list()
-        async for x in self.stream:
+        async for x in stream:
             p.append(x)
-            if len(p) == self.size:
-                return p
+            if len(p) == size:
+                yield p
+                p = list()
         if len(p) != 0:
-            return p
-        raise StopAsyncIteration
+            yield p
 
 
 class Sort(Functor):
 
     def __init__(self, stream):
-        super(Sort, self).__init__(stream)
-        self._next = self._lazy_init
+        super(Sort, self).__init__(self.sort(stream))
 
-    async def __anext__(self):
-        return await self._next()
-
-    async def _lazy_init(self):
-        self._next = AsyncIterator.new(sorted([x async for x in self.stream])).__anext__
-        return await self.__anext__()
+    @staticmethod
+    async def sort(stream):
+        for element in sorted([x async for x in stream]):
+            yield element
 
 
 class Reverse(Functor):
 
     def __init__(self, stream):
-        super(Reverse, self).__init__(stream)
-        self._next = self._lazy_init
+        super(Reverse, self).__init__(self.reverse(stream))
 
-    async def __anext__(self):
-        return await self._next()
-
-    async def _lazy_init(self):
-        self._next = AsyncIterator.new(reversed([x async for x in self.stream])).__anext__
-        return await self.__anext__()
+    @staticmethod
+    async def reverse(stream):
+        for element in reversed([x async for x in stream]):
+            yield element
 
 
 class Distinct(Functor):
@@ -392,6 +404,7 @@ map = HigherOrder.Factory(AsyncMap, SyncMap)
 filter = HigherOrder.Factory(AsyncFilter, SyncFilter)
 filter_false = HigherOrder.Factory(AsyncFilterFalse, SyncFilterFalse)
 flatten = Flatten
+group_by = HigherOrder.Factory(AsyncGroupBy, SyncGroupBy)
 inspect = HigherOrder.Factory(AsyncInspect, SyncInspect)
 skip_while = HigherOrder.Factory(AsyncSkipWhile, SyncSkipWhile)
 take_while = HigherOrder.Factory(AsyncTakeWhile, SyncTakeWhile)

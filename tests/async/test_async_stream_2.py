@@ -252,6 +252,40 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
         self.assertFalse(called.called)
 
     @run_to_completion
+    async def test_group_by(self):
+        numbers = AsyncIterator.new(['1', '12', '2', '22', '1002', '100', '1001'])
+        got = await AsyncStream(numbers).group_by(len).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    @run_to_completion
+    async def test_group_by2(self):
+        got = await AsyncStream(AsyncIterator.new(range(10))).group_by(lambda x: x % 2).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
+
+    @run_to_completion
+    async def test_group_by_a(self):
+        numbers = AsyncIterator.new(['1', '12', '2', '22', '1002', '100', '1001'])
+        got = await AsyncStream(numbers).group_by(async_lambda(len)).collect()
+        self.assertEqual(len(got), 4)
+        self.assertTrue(['1', '2'] in got)
+        self.assertTrue(['12', '22'] in got)
+        self.assertTrue(['1002', '1001'] in got)
+        self.assertTrue(['100'] in got)
+
+    @run_to_completion
+    async def test_group_by2_a(self):
+        got = await AsyncStream(AsyncIterator.new(range(10))).group_by(async_lambda(lambda x: x % 2)).collect()
+        self.assertEqual(len(got), 2)
+        self.assertTrue([1, 3, 5, 7, 9] in got)
+        self.assertTrue([0, 2, 4, 6, 8] in got)
+
+    @run_to_completion
     async def test_inspect(self):
         inspector = self.Inspector()
         got = await AsyncStream(AI([1, 2, 3, 4])).filter(lambda x: x % 2 == 0).inspect(inspector.visit).collect()
