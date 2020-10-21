@@ -333,9 +333,6 @@ async def aa_take_while(f, stream):
             break
 
 
-
-
-
 def s_enumerate(stream):
     count = 0
     for element in stream:
@@ -385,14 +382,15 @@ async def a_take(stream, limit):
         except StopAsyncIteration:
             break
 
+
 async def zip(*streams):
     streams = [coerce(stream) for stream in streams]
     while True:
         try:
-            l = list()
+            group = list()
             for stream in streams:
-                l.append(await stream.__anext__() if isinstance(stream, AsyncIter) else next(stream))
-            yield tuple(l)
+                group.append(await stream.__anext__() if isinstance(stream, AsyncIter) else next(stream))
+            yield tuple(group)
         except StopIteration:
             break
         except StopAsyncIteration:
