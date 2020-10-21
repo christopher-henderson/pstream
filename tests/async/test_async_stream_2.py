@@ -391,13 +391,13 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
     async def test_repeat(self):
         s = AsyncStream(AI([])).repeat(5)
         for _ in range(100):
-            self.assertEqual(await s.__anext__(), 5)
+            self.assertEqual(next(s), 5)
 
     @run_to_completion
     async def test_repeat_break_up(self):
         s = AsyncStream(AI([1, 2, 3])).repeat(5)
         for _ in range(100):
-            self.assertEqual(await s.__anext__(), 5)
+            self.assertEqual(next(s), 5)
 
     @run_to_completion
     async def test_repeat_terminator(self):
