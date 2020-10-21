@@ -75,6 +75,8 @@ class AsyncStream:
         """
         if self._infinite:
             raise InfiniteCollectionError(AsyncStream.collect)
+        if self._is_sync():
+            return [x for x in self]
         return [x async for x in self]
 
     def chain(self, *iterables):
@@ -108,8 +110,12 @@ class AsyncStream:
         if self._infinite:
             raise InfiniteCollectionError(AsyncStream.count)
         count = 0
-        async for _ in self:
-            count += 1
+        if self._is_sync():
+            for _ in self:
+                count += 1
+        else:
+            async for _ in self:
+                count += 1
         return count
 
     def distinct(self):
@@ -274,12 +280,13 @@ class AsyncStream:
         3
         4
         """
-        if iscoroutinefunction(f):
-            async for x in self:
-                await f(x)
+        self.stream = for_each(f, self.stream)
+        if self._is_sync():
+            for _ in self:
+                pass
         else:
-            async for x in self:
-                f(x)
+            async for _ in self:
+                pass
 
     @must_be_callable
     def group_by(self, key):
@@ -389,7 +396,7 @@ class AsyncStream:
         """
         if size <= 0:
             raise ValueError("pstream.AsyncStream.pool sizes must be greater than 0. Received {}.".format(size))
-        self.stream = pool(size, self.stream)
+        self.stream = pool(self.stream, size)
         return self
 
     def skip(self, n):
@@ -405,7 +412,7 @@ class AsyncStream:
         >>> got = await AsyncStream(numbers).skip(3).collect()
         >>> assert got == [4, 5, 6, 7, 8, 9]
         """
-        self.stream = skip(n, self.stream)
+        self.stream = skip(self.stream, n)
         return self
 
     @must_be_callable
@@ -559,7 +566,7 @@ class AsyncStream:
         >>> got = await AsyncStream(numbers).take(6).collect()
         >>> assert got == [1, 2, 3, 4, 5, 6]
         """
-        self.stream = take(n, self.stream)
+        self.stream = take(self.stream, n)
         self._infinite = False
         return self
 
@@ -623,8 +630,17 @@ class AsyncStream:
         self.stream = zip(self.stream, *iterables)
         return self
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.stream)
+
     def __aiter__(self):
         return self
 
     async def __anext__(self):
         return await self.stream.__anext__()
+
+    def _is_sync(self):
+        return not isinstance(self.stream, AsyncIter)

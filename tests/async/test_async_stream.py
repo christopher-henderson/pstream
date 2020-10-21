@@ -28,6 +28,7 @@ from builtins import zip as builtin_zip
 from functools import wraps
 
 from pstream import AsyncStream, AsyncIterator
+from pstream._async import functors
 from pstream.errors import InfiniteCollectionError, NotCallableError
 
 
@@ -391,13 +392,13 @@ class TestAsyncAsyncStream(unittest.TestCase):
     async def test_repeat(self):
         s = AsyncStream().repeat(5)
         for _ in range(100):
-            self.assertEqual(await s.__anext__(), 5)
+            self.assertEqual(next(s), 5)
 
     @run_to_completion
     async def test_repeat_break_up(self):
         s = AsyncStream([1, 2, 3]).repeat(5)
         for _ in range(100):
-            self.assertEqual(await s.__anext__(), 5)
+            self.assertEqual(next(s), 5)
 
     @run_to_completion
     async def test_repeat_terminator(self):
