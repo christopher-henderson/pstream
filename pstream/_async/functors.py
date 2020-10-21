@@ -20,12 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from collections.abc import Iterable, Iterator
-from collections import defaultdict, AsyncIterable, AsyncIterator as AsyncIter
+from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator as AsyncIter
+from collections import defaultdict
 from inspect import iscoroutinefunction
 
 from .._sync.stream import Stream
+
 Enumeration = Stream.Enumeration
+
 
 # @TODO heck yeah! Typing!
 # import typing
@@ -48,7 +50,8 @@ class AsyncIterator:
             self.stream = (x for x in stream)
         else:
             raise ValueError(
-                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(type(stream)))
+                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(
+                    type(stream)))
 
     def __aiter__(self):
         return self
@@ -67,6 +70,7 @@ def coerce(stream):
         def iterator():
             for x in stream:
                 yield x
+
         return iterator()
     elif isinstance(stream, AsyncIterable):
         return Adaptor(stream)
@@ -101,6 +105,7 @@ def higher_order_factory(ss, sa, _as, aa):
             return aa(f, stream)
         else:
             ValueError('{}'.format(type(f)))
+
     return inner
 
 
@@ -110,7 +115,12 @@ def factory(s, a):
         if isinstance(stream, AsyncIter):
             return a(stream, *args)
         return s(stream, *args)
+
     return inner
+
+##############################
+# MAP
+##############################
 
 
 def ss_map(f, stream):
@@ -132,6 +142,10 @@ async def aa_map(f, stream):
     async for x in stream:
         yield await f(x)
 
+
+##############################
+# FILTER
+##############################
 
 def ss_filter(f, stream):
     for x in stream:
@@ -157,6 +171,10 @@ async def aa_filter(f, stream):
             yield x
 
 
+##############################
+# FILTER_FALSE
+##############################
+
 def ss_filter_false(f, stream):
     for x in stream:
         if not f(x):
@@ -181,10 +199,18 @@ async def aa_filter_false(f, stream):
             yield x
 
 
+##############################
+# CHAIN
+##############################
+
 async def chain(*streams):
     async for x in flatten(streams):
         yield x
 
+
+##############################
+# FLATTEN
+##############################
 
 async def a_flatten(streams):
     async for stream in streams:
@@ -207,6 +233,10 @@ async def s_flatten(streams):
             for element in stream:
                 yield element
 
+
+##############################
+# GROUP_BY
+##############################
 
 def ss_group_by(f, stream):
     groups = defaultdict(list)
@@ -240,6 +270,10 @@ async def aa_group_by(f, stream):
         yield group
 
 
+##############################
+# INSPECT
+##############################
+
 def ss_inspect(f, stream):
     for x in stream:
         f(x)
@@ -264,10 +298,18 @@ async def aa_inspect(f, stream):
         yield x
 
 
+##############################
+# REPEAT
+##############################
+
 def repeat(x):
     while True:
         yield x
 
+
+##############################
+# SKIP_WHILE
+##############################
 
 def ss_skip_while(f, stream):
     for x in stream:
@@ -301,6 +343,10 @@ async def aa_skip_while(f, stream):
         yield x
 
 
+##############################
+# TAKE_WHILE
+##############################
+
 def ss_take_while(f, stream):
     for x in stream:
         if f(x):
@@ -333,6 +379,10 @@ async def aa_take_while(f, stream):
             break
 
 
+##############################
+# ENUMERATE
+##############################
+
 def s_enumerate(stream):
     count = 0
     for element in stream:
@@ -345,6 +395,10 @@ async def a_enumerate(stream):
     async for element in stream:
         yield Enumeration(count, element)
         count += 1
+
+##############################
+# SKIP
+##############################
 
 
 def s_skip(stream, limit):
@@ -367,6 +421,11 @@ async def a_skip(stream, limit):
         yield x
 
 
+##############################
+# TAKE
+##############################
+
+
 def s_take(stream, limit):
     for _ in range(limit):
         try:
@@ -382,6 +441,10 @@ async def a_take(stream, limit):
         except StopAsyncIteration:
             break
 
+##############################
+# ZIP
+##############################
+
 
 async def zip(*streams):
     streams = [coerce(stream) for stream in streams]
@@ -395,6 +458,10 @@ async def zip(*streams):
             break
         except StopAsyncIteration:
             break
+
+##############################
+# POOL
+##############################
 
 
 def s_pool(stream, size):
@@ -419,6 +486,10 @@ async def a_pool(stream, size):
         yield p
 
 
+##############################
+# SORT
+##############################
+
 def s_sort(stream):
     for x in sorted(stream):
         yield x
@@ -429,6 +500,10 @@ async def a_sort(stream):
         yield x
 
 
+##############################
+# REVERSE
+##############################
+
 def s_reverse(stream):
     for x in reversed(stream):
         yield x
@@ -438,6 +513,10 @@ async def a_reverse(stream):
     for x in reversed([x async for x in stream]):
         yield x
 
+
+##############################
+# DISTINCT
+##############################
 
 def s_distinct(stream):
     seen = set()
@@ -456,6 +535,10 @@ async def a_distinct(stream):
         seen.add(x)
         yield x
 
+
+##############################
+# DISTINCT_WITH
+##############################
 
 def ss_distinct_with(f, stream):
     seen = set()
@@ -496,6 +579,10 @@ async def aa_distinct_with(f, stream):
         seen.add(h)
         yield x
 
+
+##############################
+# FOR_EACH
+##############################
 
 def ss_for_each(f, stream):
     for x in stream:
