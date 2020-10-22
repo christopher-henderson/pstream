@@ -474,7 +474,7 @@ class AsyncStream:
             return self
         if step < 1:
             raise ValueError("step_by must be a positive integer, received {}".format(step))
-        self.stream = step_by(step, self.stream)
+        self.stream = step_by(self.stream, step)
         return self
         # return self.enumerate().filter(lambda e: e.count % step == 0).map(lambda e: e.element)
 

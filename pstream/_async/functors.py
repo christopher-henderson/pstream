@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import itertools
 from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator as AsyncIter
 from collections import defaultdict
 from inspect import iscoroutinefunction
@@ -33,99 +33,12 @@ Enumeration = Stream.Enumeration
 # import typing
 
 
-class AsyncIterator:
-
-    @staticmethod
-    def new(stream):
-        if isinstance(stream, AsyncIterable):
-            return stream
-        elif isinstance(stream, AsyncIter):
-            return stream.__aiter__()
-        return AsyncIterator(stream)
-
-    def __init__(self, stream):
-        if isinstance(stream, Iterator):
-            self.stream = stream
-        elif isinstance(stream, Iterable):
-            self.stream = (x for x in stream)
-        else:
-            raise ValueError(
-                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(
-                    type(stream)))
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self.stream)
-        except StopIteration:
-            raise StopAsyncIteration
-
-
-def coerce(stream):
-    if isinstance(stream, Iterator) or isinstance(stream, AsyncIter):
-        return stream
-    elif isinstance(stream, Iterable):
-        def iterator():
-            for x in stream:
-                yield x
-
-        return iterator()
-    elif isinstance(stream, AsyncIterable):
-        return Adaptor(stream)
-    else:
-        raise ValueError('not an iterable of any kind {}'.format(type(stream)))
-
-
-class Adaptor:
-
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        return self.stream.__anext__()
-
-
-def higher_order_factory(ss, sa, _as, aa):
-    def inner(f, stream):
-        stream = coerce(stream)
-        f_is_async = iscoroutinefunction(f)
-        stream_is_async = isinstance(stream, AsyncIter)
-        if not f_is_async and not stream_is_async:
-            return ss(f, stream)
-        elif not f_is_async and stream_is_async:
-            return sa(f, stream)
-        elif f_is_async and not stream_is_async:
-            return _as(f, stream)
-        elif f_is_async and stream_is_async:
-            return aa(f, stream)
-        else:
-            ValueError('{}'.format(type(f)))
-
-    return inner
-
-
-def factory(s, a):
-    def inner(stream, *args):
-        stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
-            return a(stream, *args)
-        return s(stream, *args)
-
-    return inner
-
 ##############################
 # MAP
 ##############################
 
 
-def ss_map(f, stream):
-    for x in stream:
-        yield f(x)
+from builtins import map as ss_map
 
 
 async def sa_map(f, stream):
@@ -147,10 +60,7 @@ async def aa_map(f, stream):
 # FILTER
 ##############################
 
-def ss_filter(f, stream):
-    for x in stream:
-        if f(x):
-            yield x
+from builtins import filter as ss_filter
 
 
 async def sa_filter(f, stream):
@@ -176,9 +86,7 @@ async def aa_filter(f, stream):
 ##############################
 
 def ss_filter_false(f, stream):
-    for x in stream:
-        if not f(x):
-            yield x
+    return ss_filter(lambda x: not f(x), stream)
 
 
 async def sa_filter_false(f, stream):
@@ -212,26 +120,27 @@ async def chain(*streams):
 # FLATTEN
 ##############################
 
-async def a_flatten(streams):
-    async for stream in streams:
-        stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
-            async for element in stream:
-                yield element
-        else:
-            for element in stream:
-                yield element
-
 
 async def s_flatten(streams):
     for stream in streams:
         stream = coerce(stream)
         if isinstance(stream, AsyncIter):
-            async for element in stream:
-                yield element
+            async for x in stream:
+                yield x
         else:
-            for element in stream:
-                yield element
+            for x in stream:
+                yield x
+
+
+async def a_flatten(streams):
+    async for stream in streams:
+        stream = coerce(stream)
+        if isinstance(stream, AsyncIter):
+            async for x in stream:
+                yield x
+        else:
+            for x in stream:
+                yield x
 
 
 ##############################
@@ -311,12 +220,8 @@ def repeat(x):
 # SKIP_WHILE
 ##############################
 
-def ss_skip_while(f, stream):
-    for x in stream:
-        if not f(x):
-            yield x
-    for x in stream:
-        yield x
+
+from itertools import dropwhile as ss_skip_while
 
 
 async def sa_skip_while(f, stream):
@@ -347,12 +252,8 @@ async def aa_skip_while(f, stream):
 # TAKE_WHILE
 ##############################
 
-def ss_take_while(f, stream):
-    for x in stream:
-        if f(x):
-            yield x
-        else:
-            break
+
+from itertools import takewhile as ss_take_while
 
 
 async def sa_take_while(f, stream):
@@ -383,17 +284,18 @@ async def aa_take_while(f, stream):
 # ENUMERATE
 ##############################
 
+
+from builtins import enumerate as b_enumerate
+
+
 def s_enumerate(stream):
-    count = 0
-    for element in stream:
-        yield Enumeration(count, element)
-        count += 1
+    return map(lambda x: Enumeration(*x), b_enumerate(stream))
 
 
 async def a_enumerate(stream):
     count = 0
-    async for element in stream:
-        yield Enumeration(count, element)
+    async for x in stream:
+        yield Enumeration(count, x)
         count += 1
 
 ##############################
@@ -490,9 +392,7 @@ async def a_pool(stream, size):
 # SORT
 ##############################
 
-def s_sort(stream):
-    for x in sorted(stream):
-        yield x
+s_sort = sorted
 
 
 async def a_sort(stream):
@@ -503,6 +403,7 @@ async def a_sort(stream):
 ##############################
 # REVERSE
 ##############################
+
 
 def s_reverse(stream):
     for x in reversed([x for x in stream]):
@@ -584,6 +485,7 @@ async def aa_distinct_with(f, stream):
 # FOR_EACH
 ##############################
 
+
 def ss_for_each(f, stream):
     for x in stream:
         f(x)
@@ -608,28 +510,135 @@ async def aa_for_each(f, stream):
         yield
 
 
-def step_by(step, stream):
-    s = enumerate(stream)
-    s = filter(lambda e:  e.count % step == 0, s)
-    s = map(lambda e: e.element, s)
-    return s
+##############################
+# STEP_BY
+##############################
 
 
+def s_step_by(stream, step):
+    return itertools.islice(stream, 0, None, step)
+
+
+async def a_step_by(stream, step):
+    c = 0
+    async for x in stream:
+        if c % step == 0:
+            yield x
+        c += 1
+
+
+##############################
+# UTILS
+##############################
+
+
+class AsyncIterator:
+
+    @staticmethod
+    def new(stream):
+        if isinstance(stream, AsyncIterable):
+            return stream
+        elif isinstance(stream, AsyncIter):
+            return stream.__aiter__()
+        return AsyncIterator(stream)
+
+    def __init__(self, stream):
+        if isinstance(stream, Iterator):
+            self.stream = stream
+        elif isinstance(stream, Iterable):
+            self.stream = (x for x in stream)
+        else:
+            raise ValueError(
+                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(
+                    type(stream)))
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self.stream)
+        except StopIteration:
+            raise StopAsyncIteration
+
+
+def coerce(stream):
+    if isinstance(stream, Iterator) or isinstance(stream, AsyncIter):
+        return stream
+    elif isinstance(stream, Iterable):
+        def iterator():
+            for x in stream:
+                yield x
+
+        return iterator()
+    elif isinstance(stream, AsyncIterable):
+        return Adaptor(stream)
+    else:
+        raise ValueError('not an iterable of any kind {}'.format(type(stream)))
+
+
+class Adaptor:
+
+    def __init__(self, stream):
+        self.stream = stream
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return self.stream.__anext__()
+
+
+def higher_order_factory(ss, sa, _as, aa):
+    def inner(f, stream):
+        stream = coerce(stream)
+        f_is_async = iscoroutinefunction(f)
+        stream_is_async = isinstance(stream, AsyncIter)
+        if not f_is_async and not stream_is_async:
+            return ss(f, stream)
+        elif not f_is_async and stream_is_async:
+            return sa(f, stream)
+        elif f_is_async and not stream_is_async:
+            return _as(f, stream)
+        elif f_is_async and stream_is_async:
+            return aa(f, stream)
+        else:
+            ValueError('{}'.format(type(f)))
+
+    return inner
+
+
+def factory(s, a):
+    def inner(stream, *args):
+        stream = coerce(stream)
+        if isinstance(stream, AsyncIter):
+            return a(stream, *args)
+        return s(stream, *args)
+
+    return inner
+
+##############################
+# FINAL_EXPORT_ALIASES
+##############################
+
+chain = chain
 distinct = factory(s_distinct, a_distinct)
 distinct_with = higher_order_factory(ss_distinct_with, sa_distinct_with, as_distinct_with, aa_distinct_with)
-map = higher_order_factory(ss_map, sa_map, as_map, aa_map)
+enumerate = factory(s_enumerate, a_enumerate)
 filter = higher_order_factory(ss_filter, sa_filter, as_filter, aa_filter)
 filter_false = higher_order_factory(ss_filter_false, sa_filter_false, as_filter_false, aa_filter_false)
 flatten = factory(s_flatten, a_flatten)
-group_by = higher_order_factory(ss_group_by, sa_group_by, as_group_by, aa_group_by)
-
-inspect = higher_order_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
-skip_while = higher_order_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
-take_while = higher_order_factory(ss_take_while, sa_take_while, as_take_while, aa_take_while)
-skip = factory(s_skip, a_skip)
-take = factory(s_take, a_take)
-enumerate = factory(s_enumerate, a_enumerate)
-pool = factory(s_pool, a_pool)
-sort = factory(s_sort, a_sort)
-reverse = factory(s_reverse, a_reverse)
 for_each = higher_order_factory(ss_for_each, sa_for_each, as_for_each, aa_for_each)
+group_by = higher_order_factory(ss_group_by, sa_group_by, as_group_by, aa_group_by)
+inspect = higher_order_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
+map = higher_order_factory(ss_map, sa_map, as_map, aa_map)
+pool = factory(s_pool, a_pool)
+reverse = factory(s_reverse, a_reverse)
+skip_while = higher_order_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
+skip = factory(s_skip, a_skip)
+sort = factory(s_sort, a_sort)
+step_by = factory(s_step_by, a_step_by)
+take_while = higher_order_factory(ss_take_while, sa_take_while, as_take_while, aa_take_while)
+take = factory(s_take, a_take)
+
+
