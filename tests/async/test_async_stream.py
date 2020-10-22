@@ -62,7 +62,7 @@ class TestAsyncAsyncStream(unittest.TestCase):
     async def test_value_error(self):
         try:
             AsyncStream(1)
-        except ValueError:
+        except TypeError:
             pass
 
     @run_to_completion
@@ -392,13 +392,13 @@ class TestAsyncAsyncStream(unittest.TestCase):
     async def test_repeat(self):
         s = AsyncStream().repeat(5)
         for _ in range(100):
-            self.assertEqual(next(s), 5)
+            self.assertEqual(await s.__anext__(), 5)
 
     @run_to_completion
     async def test_repeat_break_up(self):
         s = AsyncStream([1, 2, 3]).repeat(5)
         for _ in range(100):
-            self.assertEqual(next(s), 5)
+            self.assertEqual(await s.__anext__(), 5)
 
     @run_to_completion
     async def test_repeat_terminator(self):

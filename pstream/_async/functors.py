@@ -505,7 +505,7 @@ async def a_sort(stream):
 ##############################
 
 def s_reverse(stream):
-    for x in reversed(stream):
+    for x in reversed([x for x in stream]):
         yield x
 
 
@@ -606,6 +606,13 @@ async def aa_for_each(f, stream):
     async for x in stream:
         await f(x)
         yield
+
+
+def step_by(step, stream):
+    s = enumerate(stream)
+    s = filter(lambda e:  e.count % step == 0, s)
+    s = map(lambda e: e.element, s)
+    return s
 
 
 distinct = factory(s_distinct, a_distinct)

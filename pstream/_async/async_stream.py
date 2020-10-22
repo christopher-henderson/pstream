@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from .shim import AsyncShim, shim
 from pstream.errors import InfiniteCollectionError
 from pstream.utils.defensive import must_be_callable
 from pstream._async.functors import *
@@ -57,7 +57,7 @@ class AsyncStream:
         """
         if initial is None:
             initial = []
-        self.stream = AsyncIterator.new(initial)
+        self.stream = AsyncShim.new(initial)
         self._infinite = False
 
     async def collect(self):
@@ -75,10 +75,9 @@ class AsyncStream:
         """
         if self._infinite:
             raise InfiniteCollectionError(AsyncStream.collect)
-        if self._is_sync():
-            return [x for x in self]
         return [x async for x in self]
 
+    @shim
     def chain(self, *iterables):
         """
         Returns a stream that links an arbitrary number of iterators to this iterator, in a chain.
@@ -110,14 +109,11 @@ class AsyncStream:
         if self._infinite:
             raise InfiniteCollectionError(AsyncStream.count)
         count = 0
-        if self._is_sync():
-            for _ in self:
-                count += 1
-        else:
-            async for _ in self:
-                count += 1
+        async for _ in self:
+            count += 1
         return count
 
+    @shim
     def distinct(self):
         """
         Returns a stream of distinct elements. Distinction is computed by applying the builtin `hash` function
@@ -137,6 +133,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def distinct_with(self, key):
         """
         Returns a stream of distinct elements. Distinction is computed by applying the builtin `hash` function
@@ -161,6 +158,7 @@ class AsyncStream:
         self.stream = distinct_with(key, self.stream)
         return self
 
+    @shim
     def enumerate(self):
         """
         Returns a stream that yields the current count and the element during iteration.
@@ -187,6 +185,7 @@ class AsyncStream:
         self.stream = enumerate(self.stream)
         return self
 
+    @shim
     def flatten(self):
         """
         Returns a stream that flattens one level of nesting in a stream of elements that are themselves iterators.
@@ -213,6 +212,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def filter(self, predicate):
         """
         Returns a stream that filters each element using `predicate`. Only elements for which `predicate`
@@ -233,6 +233,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def filter_false(self, predicate):
         """
         Returns a stream that filters each element using `predicate`. Only elements for which `predicate`
@@ -280,15 +281,12 @@ class AsyncStream:
         3
         4
         """
-        self.stream = for_each(f, self.stream)
-        if self._is_sync():
-            for _ in self:
-                pass
-        else:
-            async for _ in self:
-                pass
+        self.stream = AsyncShim.new(for_each(f, self.stream))
+        async for _ in self:
+            pass
 
     @must_be_callable
+    @shim
     def group_by(self, key):
         """
         Returns a stream that groups elements together using the provided `key` function.
@@ -329,6 +327,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def inspect(self, f):
         """
         Returns a stream that calls the function, `f`, with a reference to each element before yielding it.
@@ -356,6 +355,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def map(self, f):
         """
         Returns a stream that maps each value using `f`.
@@ -372,6 +372,7 @@ class AsyncStream:
         self.stream = map(f, self.stream)
         return self
 
+    @shim
     def pool(self, size):
         """
         Returns a stream that will collect up to `size` elements into a list before yielding.
@@ -399,6 +400,7 @@ class AsyncStream:
         self.stream = pool(self.stream, size)
         return self
 
+    @shim
     def skip(self, n):
         """
         Returns a stream that skips over `n` number of elements.
@@ -416,6 +418,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def skip_while(self, predicate):
         """
         Returns a stream that rejects elements while `predicate` returns `True`.
@@ -434,6 +437,7 @@ class AsyncStream:
         self.stream = skip_while(predicate, self.stream)
         return self
 
+    @shim
     def sort(self):
         """
         Returns a stream whose elements are sorted.
@@ -451,6 +455,7 @@ class AsyncStream:
         self.stream = sort(self.stream)
         return self
 
+    @shim
     def step_by(self, step):
         """
         Returns a stream which steps over items by a custom amount. Regardless of the step, the first item
@@ -469,9 +474,12 @@ class AsyncStream:
             return self
         if step < 1:
             raise ValueError("step_by must be a positive integer, received {}".format(step))
-        return self.enumerate().filter(lambda e: e.count % step == 0).map(lambda e: e.element)
+        self.stream = step_by(step, self.stream)
+        return self
+        # return self.enumerate().filter(lambda e: e.count % step == 0).map(lambda e: e.element)
 
     @must_be_callable
+    @shim
     async def reduce(self, f, accumulator):
         """
         Evaluates the stream, consuming it and applying the function `f` to each item in the stream,
@@ -501,6 +509,7 @@ class AsyncStream:
                 accumulator = f(accumulator, x)
         return accumulator
 
+    @shim
     def repeat(self, element):
         """
         Returns a stream that repeats an element endlessly.
@@ -535,6 +544,7 @@ class AsyncStream:
         self._infinite = True
         return self
 
+    @shim
     def reverse(self):
         """
         Returns a stream whose elements are reversed.
@@ -553,6 +563,7 @@ class AsyncStream:
         self.stream = reverse(self.stream)
         return self
 
+    @shim
     def take(self, n):
         """
         Returns a stream that only iterates over the first `n` elements.
@@ -571,6 +582,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @shim
     def take_while(self, predicate):
         """
         Returns a stream that only accepts elements while `predicate` returns `True`.
@@ -591,6 +603,7 @@ class AsyncStream:
         self._infinite = False
         return self
 
+    @shim
     def tee(self, *receivers):
         """
         Returns a stream whose elements will be appended to objects in `receivers`.
@@ -614,6 +627,7 @@ class AsyncStream:
             self.stream = inspect(other.append, self.stream)
         return self
 
+    @shim
     def zip(self, *iterables):
         """
         Returns a stream that iterates over one or more iterators simultaneously.
@@ -630,17 +644,8 @@ class AsyncStream:
         self.stream = zip(self.stream, *iterables)
         return self
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.stream)
-
     def __aiter__(self):
         return self
 
     async def __anext__(self):
         return await self.stream.__anext__()
-
-    def _is_sync(self):
-        return not isinstance(self.stream, AsyncIter)
