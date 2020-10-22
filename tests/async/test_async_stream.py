@@ -28,8 +28,7 @@ from builtins import zip as builtin_zip
 from functools import wraps
 
 from pstream import AsyncStream, AsyncIterator
-from pstream._async import functors
-from pstream.errors import InfiniteCollectionError, NotCallableError
+from pstream.errors import InfiniteCollectionError
 
 
 def run_to_completion(f):
@@ -436,8 +435,12 @@ class TestAsyncAsyncStream(unittest.TestCase):
 
     @run_to_completion
     async def test_skip_while(self):
-        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(lambda x: x < 5).collect(),
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(lambda x: x != 5).collect(),
                          [5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_skip_while_never_make_it_a(self):
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(async_lambda(lambda x: x != 5)).collect(), [5, 6, 7, 8, 9])
 
     @run_to_completion
     async def test_skip_while_never_make_it(self):
@@ -450,7 +453,7 @@ class TestAsyncAsyncStream(unittest.TestCase):
     @run_to_completion
     async def test_skip_while_async(self):
         self.assertEqual(
-            await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(async_lambda(lambda x: x < 5)).collect(),
+            await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(async_lambda(lambda x: x != 5)).collect(),
             [5, 6, 7, 8, 9])
 
     @run_to_completion
@@ -516,13 +519,19 @@ class TestAsyncAsyncStream(unittest.TestCase):
 
     @run_to_completion
     async def test_take_while(self):
-        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(lambda x: x < 5).collect(),
+        self.assertEqual(await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(lambda x: x != 5).collect(),
                          [1, 2, 3, 4])
 
     @run_to_completion
     async def test_take_while_async(self):
         self.assertEqual(
-            await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(async_lambda(lambda x: x < 5)).collect(),
+            await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(async_lambda(lambda x: x != 10)).collect(),
+            [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_take_while_async2(self):
+        self.assertEqual(
+            await AsyncStream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(async_lambda(lambda x: x != 5)).collect(),
             [1, 2, 3, 4])
 
     @run_to_completion

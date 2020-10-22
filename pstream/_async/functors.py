@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 import itertools
 from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator as AsyncIter
 from collections import defaultdict
@@ -31,6 +32,11 @@ Enumeration = Stream.Enumeration
 
 # @TODO heck yeah! Typing!
 # import typing
+
+
+##############################
+# How to read this file.
+##############################
 
 
 ##############################
@@ -228,6 +234,7 @@ async def sa_skip_while(f, stream):
     async for x in stream:
         if not f(x):
             yield x
+            break
     async for x in stream:
         yield x
 
@@ -236,6 +243,7 @@ async def as_skip_while(f, stream):
     for x in stream:
         if not await f(x):
             yield x
+            break
     for x in stream:
         yield x
 
@@ -244,6 +252,7 @@ async def aa_skip_while(f, stream):
     async for x in stream:
         if not await f(x):
             yield x
+            break
     async for x in stream:
         yield x
 

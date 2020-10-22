@@ -281,8 +281,9 @@ class AsyncStream:
         3
         4
         """
-        self.stream = AsyncShim.new(for_each(f, self.stream))
-        async for _ in self:
+        # @TODO as_for_each
+        s = self.stream.stream if isinstance(self.stream, AsyncShim) else self.stream
+        async for _ in AsyncShim.new(for_each(f, s)):
             pass
 
     @must_be_callable

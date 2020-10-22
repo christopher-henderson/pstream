@@ -151,6 +151,15 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
         self.assertEqual(await AsyncStream([1, 2, 3, 4]).filter_false(async_lambda(lambda x: x % 2 == 0)).collect(), [1, 3])
 
     @run_to_completion
+    async def test_filter_false_a(self):
+        self.assertEqual(await AsyncStream(AI([1, 2, 3, 4])).filter_false(async_lambda(lambda x: x % 2 == 0)).collect(), [1, 3])
+
+    @run_to_completion
+    async def test_filter_false_a_(self):
+        self.assertEqual(await AsyncStream(AI([1, 2, 3, 4])).filter_false(lambda x: x % 2 == 0).collect(),
+                         [1, 3])
+
+    @run_to_completion
     async def test_filter_empty(self):
         self.assertEqual(await AsyncStream(AI([])).filter(lambda x: x % 2 == 0).collect(), [])
 
@@ -210,6 +219,32 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
 
         count = Counter()
         await AsyncStream(AI([1, 2, 3, 4, 5])).for_each(count.increment)
+        self.assertEqual(count.count, 15)
+
+    @run_to_completion
+    async def test_for_each_as(self):
+        class Counter:
+            def __init__(self):
+                self.count = 0
+
+            async def increment(self, element):
+                self.count += element
+
+        count = Counter()
+        await AsyncStream([1, 2, 3, 4, 5]).for_each(count.increment)
+        self.assertEqual(count.count, 15)
+
+    @run_to_completion
+    async def test_for_each_ss(self):
+        class Counter:
+            def __init__(self):
+                self.count = 0
+
+            def increment(self, element):
+                self.count += element
+
+        count = Counter()
+        await AsyncStream([1, 2, 3, 4, 5]).for_each(count.increment)
         self.assertEqual(count.count, 15)
 
     @run_to_completion
@@ -430,14 +465,18 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
         self.assertEqual(await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip(4).collect(), [5, 6, 7, 8, 9])
 
     @run_to_completion
+    async def test_skip2(self):
+        self.assertEqual(await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip(10).collect(), [])
+
+    @run_to_completion
     async def test_skip_while(self):
-        self.assertEqual(await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(lambda x: x < 5).collect(),
+        self.assertEqual(await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(lambda x: x != 5).collect(),
                          [5, 6, 7, 8, 9])
 
     @run_to_completion
     async def test_skip_while_async(self):
         self.assertEqual(
-            await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(async_lambda(lambda x: x < 5)).collect(),
+            await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(async_lambda(lambda x: x != 5)).collect(),
             [5, 6, 7, 8, 9])
 
     @run_to_completion
