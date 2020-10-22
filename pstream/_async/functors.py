@@ -617,9 +617,11 @@ def factory(s, a):
 
     return inner
 
+
 ##############################
 # FINAL_EXPORT_ALIASES
 ##############################
+
 
 chain = chain
 distinct = factory(s_distinct, a_distinct)
@@ -640,5 +642,3 @@ sort = factory(s_sort, a_sort)
 step_by = factory(s_step_by, a_step_by)
 take_while = higher_order_factory(ss_take_while, sa_take_while, as_take_while, aa_take_while)
 take = factory(s_take, a_take)
-
-
