@@ -24,12 +24,11 @@ import unittest
 
 from pstream import AsyncStream
 from pstream._async.shim import AsyncShim
-from tests.async.test_async_stream import run_to_completion
+from tests._async.test_async_stream import run_to_completion
 from tests.sync.test_stream import expect
 
 
 class TestShim(unittest.TestCase):
-
     class AsyncIterable:
 
         def __init__(self, iterator):
@@ -41,6 +40,7 @@ class TestShim(unittest.TestCase):
             async def inner():
                 for x in iterator:
                     yield x
+
             return inner()
 
     class Iterable:
@@ -53,6 +53,7 @@ class TestShim(unittest.TestCase):
             def inner():
                 for x in iterator:
                     yield x
+
             return inner()
 
     @run_to_completion
