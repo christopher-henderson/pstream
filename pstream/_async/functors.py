@@ -540,6 +540,7 @@ async def a_step_by(stream, step):
 # UTILS
 ##############################
 
+
 def is_async_stream(stream):
     return isinstance(stream, AsyncIterator) or isinstance(stream, AsyncIterable)
 
@@ -557,6 +558,16 @@ def coerce(stream):
         raise TypeError
 
 
+def factory(s, a):
+    def inner(stream, *args):
+        stream = coerce(stream)
+        if is_async_stream(stream):
+            return a(stream, *args)
+        return s(stream, *args)
+
+    return inner
+
+
 def higher_order_factory(ss, sa, _as, aa):
     def inner(f, stream):
         f_is_async = iscoroutinefunction(f)
@@ -571,16 +582,6 @@ def higher_order_factory(ss, sa, _as, aa):
             return aa(f, stream)
         else:
             raise TypeError
-    return inner
-
-
-def factory(s, a):
-    def inner(stream, *args):
-        stream = coerce(stream)
-        if is_async_stream(stream):
-            return a(stream, *args)
-        return s(stream, *args)
-
     return inner
 
 
