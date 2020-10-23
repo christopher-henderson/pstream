@@ -27,8 +27,9 @@ import unittest
 from builtins import zip as builtin_zip
 from functools import wraps
 
-from pstream import AsyncStream, AsyncIterator
+from pstream import AsyncStream
 from pstream.errors import InfiniteCollectionError
+from tests._async.test_async_stream_2 import AI
 
 
 def run_to_completion(f):
@@ -89,12 +90,12 @@ class TestAsyncAsyncStream(unittest.TestCase):
 
     @run_to_completion
     async def test_chain_multiple_with_async(self):
-        self.assertEqual(await AsyncStream([1, 2, 3]).chain(AsyncIterator.new([4, 5, 6]), [7, 8, 9]).collect(),
+        self.assertEqual(await AsyncStream([1, 2, 3]).chain(AI([4, 5, 6]), [7, 8, 9]).collect(),
                          [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     @run_to_completion
     async def test_chain_multiple_with_async2(self):
-        self.assertEqual(await AsyncStream([1, 2, 3]).chain([4, 5, 6], AsyncIterator.new([7, 8, 9])).collect(),
+        self.assertEqual(await AsyncStream([1, 2, 3]).chain([4, 5, 6], AI([7, 8, 9])).collect(),
                          [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     @run_to_completion

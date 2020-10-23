@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 import itertools
-from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator as AsyncIter
+from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator
 from collections import defaultdict
 from inspect import iscoroutinefunction
 
@@ -130,7 +130,7 @@ async def chain(*streams):
 async def s_flatten(streams):
     for stream in streams:
         stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
+        if is_async_stream(stream):
             async for x in stream:
                 yield x
         else:
@@ -141,7 +141,7 @@ async def s_flatten(streams):
 async def a_flatten(streams):
     async for stream in streams:
         stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
+        if is_async_stream(stream):
             async for x in stream:
                 yield x
         else:
@@ -363,7 +363,7 @@ async def zip(*streams):
         try:
             group = list()
             for stream in streams:
-                group.append(await stream.__anext__() if isinstance(stream, AsyncIter) else next(stream))
+                group.append(await stream.__anext__() if is_async_stream(stream) else next(stream))
             yield tuple(group)
         except StopIteration:
             break
@@ -540,69 +540,27 @@ async def a_step_by(stream, step):
 # UTILS
 ##############################
 
-
-class AsyncIterator:
-
-    @staticmethod
-    def new(stream):
-        if isinstance(stream, AsyncIterable):
-            return stream
-        elif isinstance(stream, AsyncIter):
-            return stream.__aiter__()
-        return AsyncIterator(stream)
-
-    def __init__(self, stream):
-        if isinstance(stream, Iterator):
-            self.stream = stream
-        elif isinstance(stream, Iterable):
-            self.stream = (x for x in stream)
-        else:
-            raise ValueError(
-                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(
-                    type(stream)))
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self.stream)
-        except StopIteration:
-            raise StopAsyncIteration
+def is_async_stream(stream):
+    return isinstance(stream, AsyncIterator) or isinstance(stream, AsyncIterable)
 
 
 def coerce(stream):
-    if isinstance(stream, Iterator) or isinstance(stream, AsyncIter):
+    if isinstance(stream, AsyncIterator):
         return stream
-    elif isinstance(stream, Iterable):
-        def iterator():
-            for x in stream:
-                yield x
-
-        return iterator()
-    elif isinstance(stream, AsyncIterable):
-        return Adaptor(stream)
+    if isinstance(stream, AsyncIterable):
+        return stream.__aiter__()
+    if isinstance(stream, Iterator):
+        return stream
+    if isinstance(stream, Iterable):
+        return stream.__iter__()
     else:
-        raise ValueError('not an iterable of any kind {}'.format(type(stream)))
-
-
-class Adaptor:
-
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        return self.stream.__anext__()
+        raise TypeError
 
 
 def higher_order_factory(ss, sa, _as, aa):
     def inner(f, stream):
-        stream = coerce(stream)
         f_is_async = iscoroutinefunction(f)
-        stream_is_async = isinstance(stream, AsyncIter)
+        stream_is_async = is_async_stream(stream)
         if not f_is_async and not stream_is_async:
             return ss(f, stream)
         elif not f_is_async and stream_is_async:
@@ -612,15 +570,14 @@ def higher_order_factory(ss, sa, _as, aa):
         elif f_is_async and stream_is_async:
             return aa(f, stream)
         else:
-            ValueError('{}'.format(type(f)))
-
+            raise TypeError
     return inner
 
 
 def factory(s, a):
     def inner(stream, *args):
         stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
+        if is_async_stream(stream):
             return a(stream, *args)
         return s(stream, *args)
 

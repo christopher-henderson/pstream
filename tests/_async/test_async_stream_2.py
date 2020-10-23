@@ -27,7 +27,8 @@ import unittest
 from builtins import zip as builtin_zip
 from functools import wraps
 
-from pstream import AsyncStream, AsyncIterator
+from pstream import AsyncStream
+from pstream._async.shim import AsyncShim
 from pstream.errors import InfiniteCollectionError
 
 
@@ -50,7 +51,7 @@ def async_lambda(f):
     return inner
 
 
-class AI(AsyncIterator):
+class AI(AsyncShim):
 
     def __init__(self, stream):
         super(AI, self).__init__(stream)
@@ -288,7 +289,7 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
 
     @run_to_completion
     async def test_group_by(self):
-        numbers = AsyncIterator.new(['1', '12', '2', '22', '1002', '100', '1001'])
+        numbers = AI(['1', '12', '2', '22', '1002', '100', '1001'])
         got = await AsyncStream(numbers).group_by(len).collect()
         self.assertEqual(len(got), 4)
         self.assertTrue(['1', '2'] in got)
@@ -298,14 +299,14 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
 
     @run_to_completion
     async def test_group_by2(self):
-        got = await AsyncStream(AsyncIterator.new(range(10))).group_by(lambda x: x % 2).collect()
+        got = await AsyncStream(AI(range(10))).group_by(lambda x: x % 2).collect()
         self.assertEqual(len(got), 2)
         self.assertTrue([1, 3, 5, 7, 9] in got)
         self.assertTrue([0, 2, 4, 6, 8] in got)
 
     @run_to_completion
     async def test_group_by_a(self):
-        numbers = AsyncIterator.new(['1', '12', '2', '22', '1002', '100', '1001'])
+        numbers = AI(['1', '12', '2', '22', '1002', '100', '1001'])
         got = await AsyncStream(numbers).group_by(async_lambda(len)).collect()
         self.assertEqual(len(got), 4)
         self.assertTrue(['1', '2'] in got)
@@ -315,7 +316,7 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
 
     @run_to_completion
     async def test_group_by2_a(self):
-        got = await AsyncStream(AsyncIterator.new(range(10))).group_by(async_lambda(lambda x: x % 2)).collect()
+        got = await AsyncStream(AI(range(10))).group_by(async_lambda(lambda x: x % 2)).collect()
         self.assertEqual(len(got), 2)
         self.assertTrue([1, 3, 5, 7, 9] in got)
         self.assertTrue([0, 2, 4, 6, 8] in got)
@@ -478,6 +479,18 @@ class TestAsyncStreamWithRealAsyncIterator(unittest.TestCase):
         self.assertEqual(
             await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(async_lambda(lambda x: x != 5)).collect(),
             [5, 6, 7, 8, 9])
+
+    @run_to_completion
+    async def test_skip_while_async2(self):
+        self.assertEqual(
+            await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(lambda x: x != 10).collect(),
+            [])
+
+    @run_to_completion
+    async def test_skip_while_async3(self):
+        self.assertEqual(
+            await AsyncStream(AI([1, 2, 3, 4, 5, 6, 7, 8, 9])).skip_while(async_lambda(lambda x: x != 10)).collect(),
+            [])
 
     @run_to_completion
     async def test_sort(self):

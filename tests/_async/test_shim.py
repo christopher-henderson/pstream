@@ -23,6 +23,7 @@
 import unittest
 
 from pstream import AsyncStream
+from pstream._async.functors import higher_order_factory
 from pstream._async.shim import AsyncShim
 from tests._async.test_async_stream import run_to_completion
 from tests.sync.test_stream import expect
@@ -86,4 +87,12 @@ class TestShim(unittest.TestCase):
 
     @expect(TypeError)
     def test_value_error(self):
-        AsyncStream(1)
+        AsyncShim(1)
+
+    @expect(TypeError)
+    def test_factory_value_error(self):
+        AsyncShim.new(1)
+
+    @expect(TypeError)
+    def test_factory_error(self):
+        higher_order_factory(1, 2, 3, 4)(1, 2)
