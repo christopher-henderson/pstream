@@ -223,6 +223,21 @@ def repeat(x):
 
 
 ##############################
+# REPEAT_WITH
+##############################
+
+
+def s_repeat_with(f):
+    while True:
+        yield f()
+
+
+async def a_repeat_with(f):
+    while True:
+        yield await f()
+
+
+##############################
 # SKIP_WHILE
 ##############################
 
@@ -352,6 +367,7 @@ async def a_take(stream, limit):
         except StopAsyncIteration:
             break
 
+
 ##############################
 # ZIP
 ##############################
@@ -363,7 +379,10 @@ async def zip(*streams):
         try:
             group = list()
             for stream in streams:
-                group.append(await stream.__anext__() if is_async_stream(stream) else next(stream))
+                if is_async_stream(stream):
+                    group.append(await stream.__anext__())
+                else:
+                    group.append(next(stream))
             yield tuple(group)
         except StopIteration:
             break
@@ -602,6 +621,8 @@ group_by = higher_order_factory(ss_group_by, sa_group_by, as_group_by, aa_group_
 inspect = higher_order_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
 map = higher_order_factory(ss_map, sa_map, as_map, aa_map)
 pool = factory(s_pool, a_pool)
+repeat = repeat
+repeat_with = factory(s_repeat_with, a_repeat_with)
 reverse = factory(s_reverse, a_reverse)
 skip_while = higher_order_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
 skip = factory(s_skip, a_skip)
