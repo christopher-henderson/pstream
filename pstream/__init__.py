@@ -28,4 +28,4 @@ import sys
 
 version = sys.version_info
 if version.major == 3 and version.minor >= 6:
-    from ._async.async_stream import AsyncStream, AsyncIterator
+    from ._async.async_stream import AsyncStream

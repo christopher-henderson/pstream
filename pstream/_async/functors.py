@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 import itertools
-from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator as AsyncIter
+from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator
 from collections import defaultdict
 from inspect import iscoroutinefunction
 
@@ -130,7 +130,7 @@ async def chain(*streams):
 async def s_flatten(streams):
     for stream in streams:
         stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
+        if is_async_stream(stream):
             async for x in stream:
                 yield x
         else:
@@ -141,7 +141,7 @@ async def s_flatten(streams):
 async def a_flatten(streams):
     async for stream in streams:
         stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
+        if is_async_stream(stream):
             async for x in stream:
                 yield x
         else:
@@ -220,6 +220,21 @@ async def aa_inspect(f, stream):
 def repeat(x):
     while True:
         yield x
+
+
+##############################
+# REPEAT_WITH
+##############################
+
+
+def s_repeat_with(f):
+    while True:
+        yield f()
+
+
+async def a_repeat_with(f):
+    while True:
+        yield await f()
 
 
 ##############################
@@ -352,6 +367,7 @@ async def a_take(stream, limit):
         except StopAsyncIteration:
             break
 
+
 ##############################
 # ZIP
 ##############################
@@ -363,7 +379,10 @@ async def zip(*streams):
         try:
             group = list()
             for stream in streams:
-                group.append(await stream.__anext__() if isinstance(stream, AsyncIter) else next(stream))
+                if is_async_stream(stream):
+                    group.append(await stream.__anext__())
+                else:
+                    group.append(next(stream))
             yield tuple(group)
         except StopIteration:
             break
@@ -541,68 +560,37 @@ async def a_step_by(stream, step):
 ##############################
 
 
-class AsyncIterator:
-
-    @staticmethod
-    def new(stream):
-        if isinstance(stream, AsyncIterable):
-            return stream
-        elif isinstance(stream, AsyncIter):
-            return stream.__aiter__()
-        return AsyncIterator(stream)
-
-    def __init__(self, stream):
-        if isinstance(stream, Iterator):
-            self.stream = stream
-        elif isinstance(stream, Iterable):
-            self.stream = (x for x in stream)
-        else:
-            raise ValueError(
-                'pstream.AsyncStream can only accept either an _async iterator, an iterator, or an iterable. Got {}'.format(
-                    type(stream)))
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self.stream)
-        except StopIteration:
-            raise StopAsyncIteration
+def is_async_stream(stream):
+    return isinstance(stream, AsyncIterator) or isinstance(stream, AsyncIterable)
 
 
 def coerce(stream):
-    if isinstance(stream, Iterator) or isinstance(stream, AsyncIter):
+    if isinstance(stream, AsyncIterator):
         return stream
-    elif isinstance(stream, Iterable):
-        def iterator():
-            for x in stream:
-                yield x
-
-        return iterator()
-    elif isinstance(stream, AsyncIterable):
-        return Adaptor(stream)
+    if isinstance(stream, AsyncIterable):
+        return stream.__aiter__()
+    if isinstance(stream, Iterator):
+        return stream
+    if isinstance(stream, Iterable):
+        return stream.__iter__()
     else:
-        raise ValueError('not an iterable of any kind {}'.format(type(stream)))
+        raise TypeError
 
 
-class Adaptor:
+def factory(s, a):
+    def inner(stream, *args):
+        stream = coerce(stream)
+        if is_async_stream(stream):
+            return a(stream, *args)
+        return s(stream, *args)
 
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        return self.stream.__anext__()
+    return inner
 
 
 def higher_order_factory(ss, sa, _as, aa):
     def inner(f, stream):
-        stream = coerce(stream)
         f_is_async = iscoroutinefunction(f)
-        stream_is_async = isinstance(stream, AsyncIter)
+        stream_is_async = is_async_stream(stream)
         if not f_is_async and not stream_is_async:
             return ss(f, stream)
         elif not f_is_async and stream_is_async:
@@ -612,18 +600,7 @@ def higher_order_factory(ss, sa, _as, aa):
         elif f_is_async and stream_is_async:
             return aa(f, stream)
         else:
-            ValueError('{}'.format(type(f)))
-
-    return inner
-
-
-def factory(s, a):
-    def inner(stream, *args):
-        stream = coerce(stream)
-        if isinstance(stream, AsyncIter):
-            return a(stream, *args)
-        return s(stream, *args)
-
+            raise TypeError
     return inner
 
 
@@ -644,6 +621,8 @@ group_by = higher_order_factory(ss_group_by, sa_group_by, as_group_by, aa_group_
 inspect = higher_order_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
 map = higher_order_factory(ss_map, sa_map, as_map, aa_map)
 pool = factory(s_pool, a_pool)
+repeat = repeat
+repeat_with = factory(s_repeat_with, a_repeat_with)
 reverse = factory(s_reverse, a_reverse)
 skip_while = higher_order_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
 skip = factory(s_skip, a_skip)

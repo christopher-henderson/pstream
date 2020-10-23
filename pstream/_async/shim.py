@@ -51,7 +51,12 @@ class AsyncShim:
         raise TypeError
 
     def __init__(self, stream):
-        self.stream = stream
+        if isinstance(stream, Iterator):
+            self.stream = stream
+        elif isinstance(stream, Iterable):
+            self.stream = stream.__iter__()
+        else:
+            raise TypeError
 
     def __aiter__(self):
         return self
