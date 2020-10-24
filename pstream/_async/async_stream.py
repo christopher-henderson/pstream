@@ -546,6 +546,12 @@ class AsyncStream:
         return self
 
     @shim
+    def repeat_with(self, f):
+        self.stream = repeat_with(f)
+        self._infinite = True
+        return self
+
+    @shim
     def reverse(self):
         """
         Returns a stream whose elements are reversed.

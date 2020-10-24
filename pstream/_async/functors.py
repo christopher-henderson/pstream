@@ -66,7 +66,12 @@ async def aa_map(f, stream):
 # FILTER
 ##############################
 
-from builtins import filter as ss_filter
+# from builtins import filter as ss_filter
+
+def ss_filter(f, stream):
+    for x in stream:
+        if f(x):
+            yield x
 
 
 async def sa_filter(f, stream):
@@ -577,7 +582,7 @@ def coerce(stream):
         raise TypeError
 
 
-def factory(s, a):
+def unary_stream_factory(s, a):
     def inner(stream, *args):
         stream = coerce(stream)
         if is_async_stream(stream):
@@ -587,7 +592,16 @@ def factory(s, a):
     return inner
 
 
-def higher_order_factory(ss, sa, _as, aa):
+def unary_function_factory(s, a):
+    def inner(f, *args):
+        if iscoroutinefunction(f):
+            return a(f, *args)
+        return s(f, *args)
+
+    return inner
+
+
+def binary_function_stream_factory(ss, sa, _as, aa):
     def inner(f, stream):
         f_is_async = iscoroutinefunction(f)
         stream_is_async = is_async_stream(stream)
@@ -610,23 +624,23 @@ def higher_order_factory(ss, sa, _as, aa):
 
 
 chain = chain
-distinct = factory(s_distinct, a_distinct)
-distinct_with = higher_order_factory(ss_distinct_with, sa_distinct_with, as_distinct_with, aa_distinct_with)
-enumerate = factory(s_enumerate, a_enumerate)
-filter = higher_order_factory(ss_filter, sa_filter, as_filter, aa_filter)
-filter_false = higher_order_factory(ss_filter_false, sa_filter_false, as_filter_false, aa_filter_false)
-flatten = factory(s_flatten, a_flatten)
-for_each = higher_order_factory(ss_for_each, sa_for_each, as_for_each, aa_for_each)
-group_by = higher_order_factory(ss_group_by, sa_group_by, as_group_by, aa_group_by)
-inspect = higher_order_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
-map = higher_order_factory(ss_map, sa_map, as_map, aa_map)
-pool = factory(s_pool, a_pool)
+distinct = unary_stream_factory(s_distinct, a_distinct)
+distinct_with = binary_function_stream_factory(ss_distinct_with, sa_distinct_with, as_distinct_with, aa_distinct_with)
+enumerate = unary_stream_factory(s_enumerate, a_enumerate)
+filter = binary_function_stream_factory(ss_filter, sa_filter, as_filter, aa_filter)
+filter_false = binary_function_stream_factory(ss_filter_false, sa_filter_false, as_filter_false, aa_filter_false)
+flatten = unary_stream_factory(s_flatten, a_flatten)
+for_each = binary_function_stream_factory(ss_for_each, sa_for_each, as_for_each, aa_for_each)
+group_by = binary_function_stream_factory(ss_group_by, sa_group_by, as_group_by, aa_group_by)
+inspect = binary_function_stream_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
+map = binary_function_stream_factory(ss_map, sa_map, as_map, aa_map)
+pool = unary_stream_factory(s_pool, a_pool)
 repeat = repeat
-repeat_with = factory(s_repeat_with, a_repeat_with)
-reverse = factory(s_reverse, a_reverse)
-skip_while = higher_order_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
-skip = factory(s_skip, a_skip)
-sort = factory(s_sort, a_sort)
-step_by = factory(s_step_by, a_step_by)
-take_while = higher_order_factory(ss_take_while, sa_take_while, as_take_while, aa_take_while)
-take = factory(s_take, a_take)
+repeat_with = unary_function_factory(s_repeat_with, a_repeat_with)
+reverse = unary_stream_factory(s_reverse, a_reverse)
+skip_while = binary_function_stream_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
+skip = unary_stream_factory(s_skip, a_skip)
+sort = unary_stream_factory(s_sort, a_sort)
+step_by = unary_stream_factory(s_step_by, a_step_by)
+take_while = binary_function_stream_factory(ss_take_while, sa_take_while, as_take_while, aa_take_while)
+take = unary_stream_factory(s_take, a_take)

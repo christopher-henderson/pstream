@@ -1,9 +1,8 @@
 import asyncio
-import collections
+from collections import Iterable, Iterator
 from functools import wraps, partial
 
 from pstream import AsyncStream
-from pstream._async.shim import AsyncShim
 
 
 def run_to_completion(f):
@@ -25,14 +24,25 @@ def AF(f):
     return inner
 
 
-class AI(AsyncShim):
+class AI:
 
     def __init__(self, stream):
-        super(AI, self).__init__(stream)
+        if isinstance(stream, Iterator):
+            self.stream = stream
+        elif isinstance(stream, Iterable):
+            self.stream = stream.__iter__()
+        else:
+            raise TypeError
+
+    def __aiter__(self):
+        return self
 
     async def __anext__(self):
         await asyncio.sleep(0.001)
-        return await super(AI, self).__anext__()
+        try:
+            return next(self.stream)
+        except StopIteration:
+            raise StopAsyncIteration
 
     def __eq__(self, other):
         return self is other
@@ -48,8 +58,6 @@ class Method:
 class Driver:
 
     def __init__(self, initial=None, method=None, want=None, evaluator=AsyncStream.collect):
-        if want is None:
-            want = []
         if initial is None:
             initial = []
         self.initial = initial
@@ -61,15 +69,24 @@ class Driver:
         self.figure(fn.__name__)
         s = AsyncStream(self.initial)
         if self.method is not None:
-            s = self.method.method(s, *self.method.args)
-        evaluator = partial(self.evaluator, s)
+            if self.method.args:
+                s = self.method.method(s, *self.method.args)
+            else:
+                s = self.method.method(s)
+        if self.evaluator is None:
+            evaluator = s
+        else:
+            evaluator = partial(self.evaluator, s)
         want = self.want
 
         @wraps(fn)
         @run_to_completion
         async def test_inner(self):
             try:
-                got = await evaluator()
+                if callable(evaluator):
+                    got = await evaluator()
+                else:
+                    got = await evaluator
             except Exception as e:
                 fn(self, exception=e)
             fn(self, got=got, want=want)
@@ -87,8 +104,8 @@ class Driver:
             return
         args = directives[1]
         for i, arg in enumerate(self.method.args):
-            arg = args[i]
-            if arg == 'a' and callable(arg):
+            directive = args[i]
+            if directive == 'a' and callable(arg):
                 self.method.args[i] = AF(arg)
-            elif directives == 'a':
+            elif directive == 'a':
                 self.method.args[i] = AI(arg)
