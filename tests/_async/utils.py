@@ -88,7 +88,7 @@ class Driver:
                 else:
                     got = await evaluator
             except Exception as e:
-                fn(self, exception=e)
+                return fn(self, exception=e)
             fn(self, got=got, want=want)
 
         return test_inner
@@ -104,6 +104,8 @@ class Driver:
             return
         args = directives[1]
         for i, arg in enumerate(self.method.args):
+            if i >= len(args):
+                break
             directive = args[i]
             if directive == 'a' and callable(arg):
                 self.method.args[i] = AF(arg)

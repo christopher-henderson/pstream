@@ -36,6 +36,18 @@ def shim(fn):
     return inner
 
 
+def async_shim(fn):
+    @wraps(fn)
+    async def inner(self, *args):
+        if isinstance(self.stream, AsyncShim):
+            self.stream = self.stream.stream
+        try:
+            return await fn(self, *args)
+        finally:
+            self.stream = AsyncShim.new(self.stream)
+    return inner
+
+
 class AsyncShim:
 
     @staticmethod

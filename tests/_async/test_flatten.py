@@ -1,4 +1,5 @@
 import unittest
+from collections import Iterator
 
 from pstream import AsyncStream
 from tests._async.utils import Driver, Method, AI
@@ -59,6 +60,42 @@ class TestFlatten(unittest.TestCase):
         if exception is not None:
             raise exception
         self.assertEqual(got, want)
+
+    class AIterable:
+
+        def __init__(self, stream: AI):
+            self.stream = stream
+
+        def __aiter__(self):
+            return self.stream
+
+    @Driver(initial=[AI(range(3)), AIterable(AI(range(3, 6)))], method=Flatten(args=[]), want=[0, 1, 2, 3, 4, 5])
+    def test4__s(self, got=None, want=None, exception=None):
+        if exception is not None:
+            raise exception
+        self.assertEqual(got, want)
+
+    class SIterable:
+
+        def __init__(self, stream: Iterator):
+            self.stream = stream
+
+        def __iter__(self):
+            return self.stream
+
+    @Driver(initial=[AI(range(3)), SIterable(range(3, 6))], method=Flatten(args=[]), want=[0, 1, 2, 3, 4, 5])
+    def test5__s(self, got=None, want=None, exception=None):
+        if exception is not None:
+            raise exception
+        self.assertEqual(got, want)
+
+    @Driver(initial=[AI(range(3)), 1], method=Flatten(args=[]), want=[0, 1, 2, 3, 4, 5])
+    def test6__s(self, got=None, want=None, exception=None):
+        if exception is None:
+            raise Exception
+        if isinstance(exception, TypeError):
+            return
+        raise exception
 
 
 if __name__ == '__main__':

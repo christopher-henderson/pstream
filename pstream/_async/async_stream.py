@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from .shim import AsyncShim, shim
+from .shim import AsyncShim, shim, async_shim
 from pstream.errors import InfiniteCollectionError
 from pstream.utils.defensive import must_be_callable
 from pstream._async.functors import *
@@ -60,6 +60,7 @@ class AsyncStream:
         self.stream = AsyncShim.new(initial)
         self._infinite = False
 
+    @async_shim
     async def collect(self):
         """
         Evaluates the stream, consuming it and returning a list of the final output.
@@ -75,7 +76,7 @@ class AsyncStream:
         """
         if self._infinite:
             raise InfiniteCollectionError(AsyncStream.collect)
-        return [x async for x in self]
+        return await collect(self.stream)
 
     @shim
     def chain(self, *iterables):
@@ -94,6 +95,7 @@ class AsyncStream:
         self.stream = chain(self.stream, *iterables)
         return self
 
+    @async_shim
     async def count(self):
         """
         Evaluates the stream, consuming it and returning a count of the number of elements in the stream.
@@ -108,10 +110,7 @@ class AsyncStream:
         """
         if self._infinite:
             raise InfiniteCollectionError(AsyncStream.count)
-        count = 0
-        async for _ in self:
-            count += 1
-        return count
+        return await count(self.stream)
 
     @shim
     def distinct(self):
@@ -254,6 +253,7 @@ class AsyncStream:
         return self
 
     @must_be_callable
+    @async_shim
     async def for_each(self, f):
         """
         Evaluates the stream, consuming it and calling `f` for each element in the stream.
@@ -281,10 +281,7 @@ class AsyncStream:
         3
         4
         """
-        # @TODO as_for_each
-        s = self.stream.stream if isinstance(self.stream, AsyncShim) else self.stream
-        async for _ in AsyncShim.new(for_each(f, s)):
-            pass
+        await for_each(f, self.stream)
 
     @must_be_callable
     @shim
@@ -324,6 +321,8 @@ class AsyncStream:
         >>> [0, 2, 4, 6, 8] in got
         True
         """
+        if self._infinite:
+            raise InfiniteCollectionError(AsyncStream.sort)
         self.stream = group_by(key, self.stream)
         return self
 
@@ -453,6 +452,8 @@ class AsyncStream:
         >>> got = await AsyncStream(arr).sort().collect()
         >>> assert got == [4, 7, 7, 12, 23, 34, 45, 63, 233, 345, 456, 567, 4567, 5678, 344523]
         """
+        if self._infinite:
+            raise InfiniteCollectionError(AsyncStream.sort)
         self.stream = sort(self.stream)
         return self
 
@@ -477,10 +478,9 @@ class AsyncStream:
             raise ValueError("step_by must be a positive integer, received {}".format(step))
         self.stream = step_by(self.stream, step)
         return self
-        # return self.enumerate().filter(lambda e: e.count % step == 0).map(lambda e: e.element)
 
     @must_be_callable
-    @shim
+    @async_shim
     async def reduce(self, f, accumulator):
         """
         Evaluates the stream, consuming it and applying the function `f` to each item in the stream,
@@ -502,13 +502,9 @@ class AsyncStream:
         >>> got = await AsyncStream(numbers).reduce(stringify, '')
         >>> assert got == '123456789'
         """
-        if iscoroutinefunction(f):
-            async for x in self:
-                accumulator = await f(accumulator, x)
-        else:
-            async for x in self:
-                accumulator = f(accumulator, x)
-        return accumulator
+        if self._infinite:
+            raise InfiniteCollectionError(AsyncStream.reduce)
+        return await reduce(f, self.stream, accumulator)
 
     @shim
     def repeat(self, element):
@@ -567,6 +563,8 @@ class AsyncStream:
         >>> got = await AsyncStream(numbers).reverse().collect()
         >>> assert got == [9, 8, 7, 6, 5, 4, 3, 2, 1]
         """
+        if self._infinite:
+            raise InfiniteCollectionError(AsyncStream.reverse)
         self.stream = reverse(self.stream)
         return self
 

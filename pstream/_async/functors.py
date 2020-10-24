@@ -38,6 +38,34 @@ Enumeration = Stream.Enumeration
 # How to read this file.
 ##############################
 
+##############################
+# COLLECT
+##############################
+
+async def s_collect(stream):
+    return [x for x in stream]
+
+
+async def a_collect(stream):
+    return [x async for x in stream]
+
+
+##############################
+# COUNT
+##############################
+
+async def s_count(stream):
+    count = 0
+    for _ in stream:
+        count += 1
+    return count
+
+
+async def a_count(stream):
+    count = 0
+    async for _ in stream:
+        count += 1
+    return count
 
 ##############################
 # MAP
@@ -515,32 +543,56 @@ async def aa_distinct_with(f, stream):
 
 
 ##############################
+# REDUCE
+##############################
+
+
+async def ss_reduce(f, stream, accumulator):
+    for x in stream:
+        accumulator = f(x, accumulator)
+    return accumulator
+
+
+async def sa_reduce(f, stream, accumulator):
+    async for x in stream:
+        accumulator = f(x, accumulator)
+    return accumulator
+
+
+async def as_reduce(f, stream, accumulator):
+    for x in stream:
+        accumulator = await f(x, accumulator)
+    return accumulator
+
+
+async def aa_reduce(f, stream, accumulator):
+    async for x in stream:
+        accumulator = await f(x, accumulator)
+    return accumulator
+
+##############################
 # FOR_EACH
 ##############################
 
 
-def ss_for_each(f, stream):
+async def ss_for_each(f, stream):
     for x in stream:
         f(x)
-        yield
 
 
 async def as_for_each(f, stream):
     for x in stream:
         await f(x)
-        yield
 
 
 async def sa_for_each(f, stream):
     async for x in stream:
         f(x)
-        yield
 
 
 async def aa_for_each(f, stream):
     async for x in stream:
         await f(x)
-        yield
 
 
 ##############################
@@ -601,20 +653,27 @@ def unary_function_factory(s, a):
     return inner
 
 
+def issomeiterator(stream):
+    return isinstance(stream, AsyncIterator) or isinstance(stream, AsyncIterable) or \
+       isinstance(stream, Iterator) or isinstance(stream, Iterable)
+
+
 def binary_function_stream_factory(ss, sa, _as, aa):
-    def inner(f, stream):
+    def inner(f, stream, *args):
+        if not callable(f):
+            raise TypeError
+        if not issomeiterator(stream):
+            raise TypeError
         f_is_async = iscoroutinefunction(f)
         stream_is_async = is_async_stream(stream)
         if not f_is_async and not stream_is_async:
-            return ss(f, stream)
+            return ss(f, stream, *args)
         elif not f_is_async and stream_is_async:
-            return sa(f, stream)
+            return sa(f, stream, *args)
         elif f_is_async and not stream_is_async:
-            return _as(f, stream)
-        elif f_is_async and stream_is_async:
-            return aa(f, stream)
+            return _as(f, stream, *args)
         else:
-            raise TypeError
+            return aa(f, stream, *args)
     return inner
 
 
@@ -624,6 +683,8 @@ def binary_function_stream_factory(ss, sa, _as, aa):
 
 
 chain = chain
+collect = unary_stream_factory(s_collect, a_collect)
+count = unary_stream_factory(s_count, a_count)
 distinct = unary_stream_factory(s_distinct, a_distinct)
 distinct_with = binary_function_stream_factory(ss_distinct_with, sa_distinct_with, as_distinct_with, aa_distinct_with)
 enumerate = unary_stream_factory(s_enumerate, a_enumerate)
@@ -635,6 +696,7 @@ group_by = binary_function_stream_factory(ss_group_by, sa_group_by, as_group_by,
 inspect = binary_function_stream_factory(ss_inspect, sa_inspect, as_inspect, aa_inspect)
 map = binary_function_stream_factory(ss_map, sa_map, as_map, aa_map)
 pool = unary_stream_factory(s_pool, a_pool)
+reduce = binary_function_stream_factory(ss_reduce, sa_reduce, as_reduce, aa_reduce)
 repeat = repeat
 repeat_with = unary_function_factory(s_repeat_with, a_repeat_with)
 reverse = unary_stream_factory(s_reverse, a_reverse)
