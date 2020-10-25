@@ -19,7 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import itertools
 from collections.abc import Iterable, Iterator, AsyncIterable, AsyncIterator
 from collections import defaultdict
@@ -462,6 +461,25 @@ async def a_sort(stream):
 
 
 ##############################
+# SORT_WITH
+##############################
+
+
+def ss_sort_with(f, stream):
+    for x in sorted([x for x in stream], key=f):
+        yield x
+
+
+async def sa_sort_with(f, stream):
+    for x in sorted([x async for x in stream], key=f):
+        yield x
+
+
+def fail_sort_with(_, __):
+    raise TypeError('The key function provided to AsyncStream.sort_with may NOT be asynchronous.')
+
+
+##############################
 # REVERSE
 ##############################
 
@@ -703,6 +721,7 @@ reverse = unary_stream_factory(s_reverse, a_reverse)
 skip_while = binary_function_stream_factory(ss_skip_while, sa_skip_while, as_skip_while, aa_skip_while)
 skip = unary_stream_factory(s_skip, a_skip)
 sort = unary_stream_factory(s_sort, a_sort)
+sort_with = binary_function_stream_factory(ss_sort_with, sa_sort_with, fail_sort_with, fail_sort_with)
 step_by = unary_stream_factory(s_step_by, a_step_by)
 take_while = binary_function_stream_factory(ss_take_while, sa_take_while, as_take_while, aa_take_while)
 take = unary_stream_factory(s_take, a_take)

@@ -450,6 +450,29 @@ class AsyncStream(Generic[T]):
         self.stream = sort(self.stream)
         return self
 
+    @not_infinite_s
+    @shim
+    def sort_with(self, key: Callable[[T], U]):
+        """
+        Returns a stream whose elements are sorted using the provided key selection function.
+
+        Note that calling `sort_with` itself remains lazy, however at time of collecting the stream a sort
+        will incur an internal collection at that particular step.
+
+        :param key: A function such that `key(element) -> T` where `T` is the type used for comparison. `key` MAY NOT
+        be asynchronous! This is due to a limitation in the builtin `sorted` function which does not support
+        asynchronous key functions.
+
+        :Returns: :class:`AsyncStream`
+
+        :Example:
+        >>> arr = ['12', '233', '4567', '344523', '7', '567', '34', '5678', '456', '23', '4', '7', '63', '45', '345']
+        >>> got = await AsyncStream(arr).sort_with(len).collect()
+        >>> assert got == ['7', '4', '7', '12', '34', '23', '63', '45', '233', '567', '456', '345', '4567', '5678', '344523']
+        """
+        self.stream = sort_with(key, self.stream)
+        return self
+
     @shim
     def step_by(self, step: int):
         """
@@ -534,6 +557,35 @@ class AsyncStream(Generic[T]):
 
     @shim
     def repeat_with(self, f: Callable[[], T]):
+        """
+        Returns a stream that yields the output of `f` endlessly.
+
+        :param f: A function such that `f() -> T`. `f` may be either asynchronous or synchronous.
+
+        :Returns: :class:`AsyncStream`
+
+        :Example:
+        >>> got = await AsyncStream().repeat_with(lambda: 1).take(5).collect()
+        >>> assert got == [1, 1, 1, 1, 1]
+
+        A call to `repeat` wipes out any previous step in the iterator.
+
+        :Example:
+        >>> # The initial range, enumeration, and chain are completely lost
+        >>> # and the stream returns 1 indefinitely.
+        >>> s = await AsyncStream(range(10)).enumerate().chain(range(10, 20)).repeat_with(lambda: 1)
+
+        Unless a limiting step, such as :meth:`AsyncStream.take_while` or :meth:`AsyncStream.take`, has been setup after
+        a call to `repeat`, the consumers :meth:`AsyncStream.collect` and :meth:`AsyncStream.count`
+        will throw an :class:`errors.InfiniteCollectionError`.
+
+        :Example:
+        >>> try:
+        ...     await AsyncStream().repeat_with(lambda: 1).collect()
+        ... except InfiniteCollectionError as error:
+        ...     print(error)
+        AsyncStream.collect was called on an infinitely repeating iterator. If you use Stream.repeat, then you MUST include either a Stream.take or a Stream.take_while if you wish to call Stream.collect
+        """
         self.stream = repeat_with(f)
         self._infinite = True
         return self
