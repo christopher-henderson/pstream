@@ -72,6 +72,14 @@ class TestShim(unittest.TestCase):
         self.assertEqual(got, [1, 3, 5, 7, 9])
 
     @run_to_completion
+    async def test_shim_iterable(self):
+        stream = AsyncShim(TestShim.Iterable(range(10)))
+        i = 0
+        async for x in stream:
+            self.assertEqual(x, i)
+            i += 1
+
+    @run_to_completion
     async def test_async_iterator(self):
         stream = AsyncStream(TestShim.AsyncIterable(range(10)).__aiter__())
         self.assertFalse(isinstance(stream.stream, AsyncShim))

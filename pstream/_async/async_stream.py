@@ -19,13 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from .shim import AsyncShim, shim, async_shim
+from .shim import AsyncShim, shim, async_shim, not_infinite_a, not_infinite_s
 from pstream.errors import InfiniteCollectionError
-from pstream.utils.defensive import must_be_callable
 from pstream._async.functors import *
 
+from typing import TypeVar, Generic, List
 
-class AsyncStream:
+T = TypeVar('T')
+U = TypeVar('U')
+
+
+class AsyncStream(Generic[T]):
     """The API for an AsyncStream has a 1:1 correspondence with the API for a :class:`Stream` (with the exception of
     a missing :meth:`Stream.sort_with` method).
 
@@ -60,8 +64,9 @@ class AsyncStream:
         self.stream = AsyncShim.new(initial)
         self._infinite = False
 
+    @not_infinite_a
     @async_shim
-    async def collect(self):
+    async def collect(self) -> List[T]:
         """
         Evaluates the stream, consuming it and returning a list of the final output.
 
@@ -74,8 +79,6 @@ class AsyncStream:
         >>> got = await stream.collect()
         >>> assert got == [2, 4, 6, 8]
         """
-        if self._infinite:
-            raise InfiniteCollectionError(AsyncStream.collect)
         return await collect(self.stream)
 
     @shim
@@ -95,6 +98,7 @@ class AsyncStream:
         self.stream = chain(self.stream, *iterables)
         return self
 
+    @not_infinite_a
     @async_shim
     async def count(self):
         """
@@ -108,8 +112,6 @@ class AsyncStream:
         >>> count = await AsyncStream(range(100)).filter(lambda x: x % 2 is 0).count()
         >>> assert count == 50
         """
-        if self._infinite:
-            raise InfiniteCollectionError(AsyncStream.count)
         return await count(self.stream)
 
     @shim
@@ -131,7 +133,6 @@ class AsyncStream:
         self.stream = distinct(self.stream)
         return self
 
-    @must_be_callable
     @shim
     def distinct_with(self, key):
         """
@@ -210,7 +211,6 @@ class AsyncStream:
         self.stream = flatten(self.stream)
         return self
 
-    @must_be_callable
     @shim
     def filter(self, predicate):
         """
@@ -231,7 +231,6 @@ class AsyncStream:
         self.stream = filter(predicate, self.stream)
         return self
 
-    @must_be_callable
     @shim
     def filter_false(self, predicate):
         """
@@ -252,7 +251,7 @@ class AsyncStream:
         self.stream = filter_false(predicate, self.stream)
         return self
 
-    @must_be_callable
+    @not_infinite_a
     @async_shim
     async def for_each(self, f):
         """
@@ -283,7 +282,7 @@ class AsyncStream:
         """
         await for_each(f, self.stream)
 
-    @must_be_callable
+    @not_infinite_s
     @shim
     def group_by(self, key):
         """
@@ -321,12 +320,9 @@ class AsyncStream:
         >>> [0, 2, 4, 6, 8] in got
         True
         """
-        if self._infinite:
-            raise InfiniteCollectionError(AsyncStream.sort)
         self.stream = group_by(key, self.stream)
         return self
 
-    @must_be_callable
     @shim
     def inspect(self, f):
         """
@@ -354,7 +350,6 @@ class AsyncStream:
         self.stream = inspect(f, self.stream)
         return self
 
-    @must_be_callable
     @shim
     def map(self, f):
         """
@@ -417,7 +412,6 @@ class AsyncStream:
         self.stream = skip(self.stream, n)
         return self
 
-    @must_be_callable
     @shim
     def skip_while(self, predicate):
         """
@@ -437,6 +431,7 @@ class AsyncStream:
         self.stream = skip_while(predicate, self.stream)
         return self
 
+    @not_infinite_s
     @shim
     def sort(self):
         """
@@ -452,8 +447,6 @@ class AsyncStream:
         >>> got = await AsyncStream(arr).sort().collect()
         >>> assert got == [4, 7, 7, 12, 23, 34, 45, 63, 233, 345, 456, 567, 4567, 5678, 344523]
         """
-        if self._infinite:
-            raise InfiniteCollectionError(AsyncStream.sort)
         self.stream = sort(self.stream)
         return self
 
@@ -479,7 +472,7 @@ class AsyncStream:
         self.stream = step_by(self.stream, step)
         return self
 
-    @must_be_callable
+    @not_infinite_s
     @async_shim
     async def reduce(self, f, accumulator):
         """
@@ -502,8 +495,6 @@ class AsyncStream:
         >>> got = await AsyncStream(numbers).reduce(stringify, '')
         >>> assert got == '123456789'
         """
-        if self._infinite:
-            raise InfiniteCollectionError(AsyncStream.reduce)
         return await reduce(f, self.stream, accumulator)
 
     @shim
@@ -547,6 +538,7 @@ class AsyncStream:
         self._infinite = True
         return self
 
+    @not_infinite_s
     @shim
     def reverse(self):
         """
@@ -563,8 +555,6 @@ class AsyncStream:
         >>> got = await AsyncStream(numbers).reverse().collect()
         >>> assert got == [9, 8, 7, 6, 5, 4, 3, 2, 1]
         """
-        if self._infinite:
-            raise InfiniteCollectionError(AsyncStream.reverse)
         self.stream = reverse(self.stream)
         return self
 
@@ -586,7 +576,6 @@ class AsyncStream:
         self._infinite = False
         return self
 
-    @must_be_callable
     @shim
     def take_while(self, predicate):
         """

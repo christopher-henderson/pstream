@@ -38,7 +38,7 @@ from collections import namedtuple, defaultdict
 try:
     # Py3
     from collections.abc import Iterator, Iterable
-except ImportError:
+except ImportError:  # pragma: no cover
     # Py2
     from collections import Iterator, Iterable
 

@@ -1,8 +1,23 @@
 import asyncio
-from collections import Iterable, Iterator
+from collections.abc import Iterable, Iterator
 from functools import wraps, partial
 
 from pstream import AsyncStream
+
+
+def expect(exception):
+    def wrapper(fn):
+        @wraps(fn)
+        async def inner(self, *args, **kwargs):
+            try:
+                await fn(self, *args, **kwargs)
+            except Exception as e:
+                if not isinstance(e, exception):
+                    raise e
+                return
+            raise RuntimeError('expected {}'.format(exception))
+        return inner
+    return wrapper
 
 
 def run_to_completion(f):

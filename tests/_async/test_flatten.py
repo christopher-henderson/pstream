@@ -1,5 +1,5 @@
 import unittest
-from collections import Iterator
+from collections.abc import Iterator
 
 from pstream import AsyncStream
 from tests._async.utils import Driver, Method, AI

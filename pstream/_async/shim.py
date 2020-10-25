@@ -23,6 +23,24 @@
 from collections.abc import AsyncIterator, AsyncIterable, Iterator, Iterable
 from functools import wraps
 
+from pstream.errors import InfiniteCollectionError
+
+
+def not_infinite_a(fn):
+    async def inner(self, *args, **kwargs):
+        if self._infinite:
+            raise InfiniteCollectionError(fn)
+        return await fn(self, *args, **kwargs)
+    return inner
+
+
+def not_infinite_s(fn):
+    def inner(self, *args, **kwargs):
+        if self._infinite:
+            raise InfiniteCollectionError(fn)
+        return fn(self, *args, **kwargs)
+    return inner
+
 
 def shim(fn):
     @wraps(fn)

@@ -27,5 +27,5 @@ from ._sync.stream import Stream
 import sys
 
 version = sys.version_info
-if version.major == 3 and version.minor >= 6:
+if version.major == 3 and version.minor >= 6:  # pragma: no cover
     from ._async.async_stream import AsyncStream
