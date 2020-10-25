@@ -30,15 +30,17 @@ U = TypeVar('U')
 
 
 class AsyncStream(Generic[T]):
-    """The API for an AsyncStream has a 1:1 correspondence with the API for a :class:`Stream` (with the exception of
-    a missing :meth:`Stream.sort_with` method).
+    """The API for an AsyncStream has a 1:1 correspondence with the API for a :class:`Stream`.
 
-    The difference is that an AsyncStream may accept asynchronous iterators (objects for which `__anext__` is defined)
-    and asynchronous functions at all opportunities.
+    The difference is that an AsyncStream may accept asynchronous iterators/iterables
+    and asynchronous functions at all opportunities (with the notable exception of :meth:`AsyncStream.sort_with`
+    which cannot take in an asynchronous key function).
 
-    However, it is not `mandatory` that the provided iterators and functions are asynchronous. Synchronous iterators
-    will be wrapped into an asynchronous adaptor and synchronous functions will be called as normal with no additional
-    overhead.
+    However, it is not `mandatory` that the provided iterators and functions be all asynchronous. The two runtime
+    characteristics may be mixed and matched. The correct implementation for all combinations is selected at the time
+    of `building`the stream, rather than being dispatched during the stream's evaluation. The result is that at the time
+    of evaluatiom, each step in your stream is exactly as precise, and as minimal, as you would expect from a
+    manual implementation.
 
     >>> async def consult(element):
     ...     # Ask some remote microservice whether
