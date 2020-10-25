@@ -82,7 +82,8 @@ matrix:
         - pip3 install -r requirements.txt
       script:
         - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
-        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401 --exclude functors.py
+        - python -m flake8 pstream/_async/functors.py --extend-ignore=F405,E501,F403,F401,E402
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -102,8 +103,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
-        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401 --exclude functors.py
+        - python -m flake8 pstream/_async/functors.py --extend-ignore=F405,E501,F403,F401,E402
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
@@ -123,8 +124,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
-        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401 --exclude functors.py
+        - python -m flake8 pstream/_async/functors.py --extend-ignore=F405,E501,F403,F401,E402
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
@@ -144,8 +145,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
-        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401 --exclude functors.py
+        - python -m flake8 pstream/_async/functors.py --extend-ignore=F405,E501,F403,F401,E402
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
@@ -165,8 +166,8 @@ matrix:
       install:
         - pip3 install -r requirements.txt
       script:
-        - python -m pytest --cov=pstream -W error --cov-report=xml --cov-branch tests
-        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401
+        - python -m flake8 pstream tests --extend-ignore=F405,E501,F403,F401 --exclude functors.py
+        - python -m flake8 pstream/_async/functors.py --extend-ignore=F405,E501,F403,F401,E402
       after_success:
         - codecov.exe -f coverage.xml
       env: PATH=/c/Python310:/c/Python310/Scripts:$PATH
