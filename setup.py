@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.26",
     author="Christopher Henderson",
     author_email="chris@chenderson.org",
-    description="Provides a Stream and AsyncStream for composing fluent lazily evaluated, _sync fusion, iterators.",
+    description="Provides a Stream and AsyncStream for composing fluent lazily evaluated, sync/async fusion, iterators.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/christopher-henderson/pstream",
