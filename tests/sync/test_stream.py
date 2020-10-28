@@ -24,7 +24,7 @@ import hashlib
 import unittest
 from functools import wraps
 
-from pstream.errors import InfiniteCollectionError, NotCallableError
+from pstream.errors import InfiniteCollectionError
 from pstream import Stream
 
 
@@ -91,13 +91,6 @@ class TestStream(unittest.TestCase):
         got = Stream(people).distinct_with(fingerprint).collect()
         self.assertEqual(got, ['Bob', 'Alice', 'Eve', 'Achmed'])
 
-    def test_distinct_with_bad_fn(self):
-        try:
-            Stream().distinct_with(1).collect()
-        except NotCallableError:
-            return
-        raise Exception
-
     def test_enumerate(self):
         self.assertEqual(Stream([0, 1, 2]).enumerate().collect(), [(0, 0), (1, 1), (2, 2)])
 
@@ -109,10 +102,6 @@ class TestStream(unittest.TestCase):
 
     def test_filter_false(self):
         self.assertEqual(Stream([1, 2, 3, 4]).filter_false(lambda x: x % 2 == 0).collect(), [1, 3])
-
-    @expect(NotCallableError)
-    def test_filter_bad(self):
-        Stream().filter(None)
 
     def test_filter_empty(self):
         self.assertEqual(Stream([]).filter(lambda x: x % 2 == 0).collect(), [])
@@ -154,10 +143,6 @@ class TestStream(unittest.TestCase):
         Stream([1, 2, 3, 4, 5]).for_each(count.increment)
         self.assertEqual(count.count, 15)
 
-    @expect(NotCallableError)
-    def test_for_each_bad(self):
-        Stream().for_each(None)
-
     def test_for_each_empty(self):
         class Called:
             def __init__(self):
@@ -193,10 +178,6 @@ class TestStream(unittest.TestCase):
         got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).inspect(inspector.visit).collect()
         self.assertEqual(got, inspector.copy)
 
-    @expect(NotCallableError)
-    def test_inspect_bad(self):
-        Stream().inspect(None)
-
     def test_inspect_then(self):
         inspector = TestStream.Inspector()
         got = Stream([1, 2, 3, 4]).filter(lambda x: x % 2 == 0).inspect(inspector.visit).map(lambda x: x * 2).collect()
@@ -205,10 +186,6 @@ class TestStream(unittest.TestCase):
 
     def test_map(self):
         self.assertEqual(Stream([1, 2, 3, 4]).map(lambda x: x * 2).collect(), [2, 4, 6, 8])
-
-    @expect(NotCallableError)
-    def test_map_bad(self):
-        Stream().map(None)
 
     def test_map_empty(self):
         self.assertEqual(Stream([]).map(lambda x: x * 2).collect(), [])
@@ -257,10 +234,6 @@ class TestStream(unittest.TestCase):
         got = Stream(numbers).reduce(add, 0)
         assert got == 45
 
-    @expect(NotCallableError)
-    def test_reduce_bad(self):
-        Stream().reduce(None, 0)
-
     def test_repeat(self):
         s = Stream().repeat(5)
         for _ in range(100):
@@ -286,6 +259,31 @@ class TestStream(unittest.TestCase):
         except InfiniteCollectionError:
             pass
 
+    def test_repeat_with(self):
+        s = Stream().repeat_with(lambda: 5)
+        for _ in range(100):
+            self.assertEqual(next(s), 5)
+
+    def test_repeat_with_break_upstream(self):
+        s = Stream([1, 2, 3]).repeat_with(lambda: 5)
+        for _ in range(100):
+            self.assertEqual(next(s), 5)
+
+    def test_repeat_with_terminator(self):
+        self.assertEqual(Stream().repeat_with(lambda: 5).take(5).collect(), [5, 5, 5, 5, 5])
+
+    def test_repeat_with_collection(self):
+        try:
+            Stream().repeat_with(lambda: 1).collect()
+        except InfiniteCollectionError:
+            pass
+
+    def test_repeat_with_count(self):
+        try:
+            Stream().repeat_with(lambda: 1).count()
+        except InfiniteCollectionError:
+            pass
+
     def test_reverse(self):
         self.assertEqual(Stream([1, 2, 3, 4]).reverse().collect(), [4, 3, 2, 1])
 
@@ -294,10 +292,6 @@ class TestStream(unittest.TestCase):
 
     def test_skip_while(self):
         self.assertEqual(Stream([1, 2, 3, 4, 5, 6, 7, 8, 9]).skip_while(lambda x: x < 5).collect(), [5, 6, 7, 8, 9])
-
-    @expect(NotCallableError)
-    def test_skip_while_bad(self):
-        Stream().skip_while(None)
 
     def test_sort(self):
         arr = [12, 233, 4567, 344523, 7, 567, 34, 5678, 456, 23, 4, 7, 63, 45, 345]
@@ -340,10 +334,6 @@ class TestStream(unittest.TestCase):
 
     def test_take_while(self):
         self.assertEqual(Stream([1, 2, 3, 4, 5, 6, 7, 8, 9]).take_while(lambda x: x < 5).collect(), [1, 2, 3, 4])
-
-    @expect(NotCallableError)
-    def test_take_while_bad(self):
-        Stream().take_while(None)
 
     def test_tee(self):
         a = list()

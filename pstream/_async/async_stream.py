@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from .shim import AsyncShim, shim, async_shim, not_infinite_a, not_infinite_s
+from .util import AsyncAdaptor, unwrap, not_infinite
 from pstream.errors import InfiniteCollectionError
 from pstream._async.functors import *
 
@@ -63,11 +63,11 @@ class AsyncStream(Generic[T]):
         """
         if initial is None:
             initial = []
-        self.stream = AsyncShim.new(initial)
+        self.stream = AsyncAdaptor.new(initial)
         self._infinite = False
 
-    @not_infinite_a
-    @async_shim
+    @not_infinite
+    @unwrap
     async def collect(self) -> List[T]:
         """
         Evaluates the stream, consuming it and returning a list of the final output.
@@ -83,7 +83,7 @@ class AsyncStream(Generic[T]):
         """
         return await collect(self.stream)
 
-    @shim
+    @unwrap
     def chain(self, *iterables: Collection[T]):
         """
         Returns a stream that links an arbitrary number of iterators to this iterator, in a chain.
@@ -100,8 +100,8 @@ class AsyncStream(Generic[T]):
         self.stream = chain(self.stream, *iterables)
         return self
 
-    @not_infinite_a
-    @async_shim
+    @unwrap
+    @not_infinite
     async def count(self):
         """
         Evaluates the stream, consuming it and returning a count of the number of elements in the stream.
@@ -116,7 +116,7 @@ class AsyncStream(Generic[T]):
         """
         return await count(self.stream)
 
-    @shim
+    @unwrap
     def distinct(self):
         """
         Returns a stream of distinct elements. Distinction is computed by applying the builtin `hash` function
@@ -135,7 +135,7 @@ class AsyncStream(Generic[T]):
         self.stream = distinct(self.stream)
         return self
 
-    @shim
+    @unwrap
     def distinct_with(self, key: Callable[[T], U]):
         """
         Returns a stream of distinct elements. Distinction is computed by applying the builtin `hash` function
@@ -160,7 +160,7 @@ class AsyncStream(Generic[T]):
         self.stream = distinct_with(key, self.stream)
         return self
 
-    @shim
+    @unwrap
     def enumerate(self):
         """
         Returns a stream that yields the current count and the element during iteration.
@@ -187,7 +187,7 @@ class AsyncStream(Generic[T]):
         self.stream = enumerate(self.stream)
         return self
 
-    @shim
+    @unwrap
     def flatten(self):
         """
         Returns a stream that flattens one level of nesting in a stream of elements that are themselves iterators.
@@ -213,7 +213,7 @@ class AsyncStream(Generic[T]):
         self.stream = flatten(self.stream)
         return self
 
-    @shim
+    @unwrap
     def filter(self, predicate: Callable[[T], bool]):
         """
         Returns a stream that filters each element using `predicate`. Only elements for which `predicate`
@@ -233,7 +233,7 @@ class AsyncStream(Generic[T]):
         self.stream = filter(predicate, self.stream)
         return self
 
-    @shim
+    @unwrap
     def filter_false(self, predicate: Callable[[T], bool]):
         """
         Returns a stream that filters each element using `predicate`. Only elements for which `predicate`
@@ -253,8 +253,8 @@ class AsyncStream(Generic[T]):
         self.stream = filter_false(predicate, self.stream)
         return self
 
-    @not_infinite_a
-    @async_shim
+    @unwrap
+    @not_infinite
     async def for_each(self, f: Callable[[T], None]):
         """
         Evaluates the stream, consuming it and calling `f` for each element in the stream.
@@ -284,8 +284,8 @@ class AsyncStream(Generic[T]):
         """
         await for_each(f, self.stream)
 
-    @not_infinite_s
-    @shim
+    @unwrap
+    @not_infinite
     def group_by(self, key: Callable[[T], U]):
         """
         Returns a stream that groups elements together using the provided `key` function.
@@ -325,7 +325,7 @@ class AsyncStream(Generic[T]):
         self.stream = group_by(key, self.stream)
         return self
 
-    @shim
+    @unwrap
     def inspect(self, f: Callable[[T], None]):
         """
         Returns a stream that calls the function, `f`, with a reference to each element before yielding it.
@@ -352,7 +352,7 @@ class AsyncStream(Generic[T]):
         self.stream = inspect(f, self.stream)
         return self
 
-    @shim
+    @unwrap
     def map(self, f: Callable[[T], U]):
         """
         Returns a stream that maps each value using `f`.
@@ -369,7 +369,7 @@ class AsyncStream(Generic[T]):
         self.stream = map(f, self.stream)
         return self
 
-    @shim
+    @unwrap
     def pool(self, size: int):
         """
         Returns a stream that will collect up to `size` elements into a list before yielding.
@@ -397,7 +397,7 @@ class AsyncStream(Generic[T]):
         self.stream = pool(self.stream, size)
         return self
 
-    @shim
+    @unwrap
     def skip(self, n: int):
         """
         Returns a stream that skips over `n` number of elements.
@@ -414,7 +414,7 @@ class AsyncStream(Generic[T]):
         self.stream = skip(self.stream, n)
         return self
 
-    @shim
+    @unwrap
     def skip_while(self, predicate: Callable[[T], bool]):
         """
         Returns a stream that rejects elements while `predicate` returns `True`.
@@ -433,8 +433,8 @@ class AsyncStream(Generic[T]):
         self.stream = skip_while(predicate, self.stream)
         return self
 
-    @not_infinite_s
-    @shim
+    @unwrap
+    @not_infinite
     def sort(self):
         """
         Returns a stream whose elements are sorted.
@@ -452,8 +452,8 @@ class AsyncStream(Generic[T]):
         self.stream = sort(self.stream)
         return self
 
-    @not_infinite_s
-    @shim
+    @unwrap
+    @not_infinite
     def sort_with(self, key: Callable[[T], U]):
         """
         Returns a stream whose elements are sorted using the provided key selection function.
@@ -475,7 +475,7 @@ class AsyncStream(Generic[T]):
         self.stream = sort_with(key, self.stream)
         return self
 
-    @shim
+    @unwrap
     def step_by(self, step: int):
         """
         Returns a stream which steps over items by a custom amount. Regardless of the step, the first item
@@ -497,8 +497,8 @@ class AsyncStream(Generic[T]):
         self.stream = step_by(self.stream, step)
         return self
 
-    @not_infinite_s
-    @async_shim
+    @unwrap
+    @not_infinite
     async def reduce(self, f: Callable[[T], U], accumulator: U) -> U:
         """
         Evaluates the stream, consuming it and applying the function `f` to each item in the stream,
@@ -522,7 +522,7 @@ class AsyncStream(Generic[T]):
         """
         return await reduce(f, self.stream, accumulator)
 
-    @shim
+    @unwrap
     def repeat(self, element: T):
         """
         Returns a stream that repeats an element endlessly.
@@ -557,7 +557,7 @@ class AsyncStream(Generic[T]):
         self._infinite = True
         return self
 
-    @shim
+    @unwrap
     def repeat_with(self, f: Callable[[], T]):
         """
         Returns a stream that yields the output of `f` endlessly.
@@ -592,8 +592,8 @@ class AsyncStream(Generic[T]):
         self._infinite = True
         return self
 
-    @not_infinite_s
-    @shim
+    @unwrap
+    @not_infinite
     def reverse(self):
         """
         Returns a stream whose elements are reversed.
@@ -612,7 +612,7 @@ class AsyncStream(Generic[T]):
         self.stream = reverse(self.stream)
         return self
 
-    @shim
+    @unwrap
     def take(self, n: int):
         """
         Returns a stream that only iterates over the first `n` elements.
@@ -630,7 +630,7 @@ class AsyncStream(Generic[T]):
         self._infinite = False
         return self
 
-    @shim
+    @unwrap
     def take_while(self, predicate: Callable[[T], bool]):
         """
         Returns a stream that only accepts elements while `predicate` returns `True`.
@@ -651,7 +651,7 @@ class AsyncStream(Generic[T]):
         self._infinite = False
         return self
 
-    @shim
+    @unwrap
     def tee(self, *receivers):
         """
         Returns a stream whose elements will be appended to objects in `receivers`.
@@ -675,7 +675,7 @@ class AsyncStream(Generic[T]):
             self.stream = inspect(other.append, self.stream)
         return self
 
-    @shim
+    @unwrap
     def zip(self, *iterables: Collection[T]):
         """
         Returns a stream that iterates over one or more iterators simultaneously.

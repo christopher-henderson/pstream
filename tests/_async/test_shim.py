@@ -24,7 +24,7 @@ import unittest
 
 from pstream import AsyncStream
 from pstream._async.functors import binary_function_stream_factory
-from pstream._async.shim import AsyncShim
+from pstream._async.util import AsyncAdaptor
 from tests._async.utils import run_to_completion
 from tests.sync.test_stream import expect
 
@@ -60,20 +60,20 @@ class TestShim(unittest.TestCase):
     @run_to_completion
     async def test_async_iterable(self):
         stream = AsyncStream(TestShim.AsyncIterable(range(10)))
-        self.assertFalse(isinstance(stream.stream, AsyncShim))
+        self.assertFalse(isinstance(stream.stream, AsyncAdaptor))
         got = await stream.filter(lambda x: x % 2).collect()
         self.assertEqual(got, [1, 3, 5, 7, 9])
 
     @run_to_completion
     async def test_iterable(self):
         stream = AsyncStream(TestShim.Iterable(range(10)))
-        self.assertTrue(isinstance(stream.stream, AsyncShim))
+        self.assertTrue(isinstance(stream.stream, AsyncAdaptor))
         got = await stream.filter(lambda x: x % 2).collect()
         self.assertEqual(got, [1, 3, 5, 7, 9])
 
     @run_to_completion
     async def test_shim_iterable(self):
-        stream = AsyncShim(TestShim.Iterable(range(10)))
+        stream = AsyncAdaptor(TestShim.Iterable(range(10)))
         i = 0
         async for x in stream:
             self.assertEqual(x, i)
@@ -82,24 +82,24 @@ class TestShim(unittest.TestCase):
     @run_to_completion
     async def test_async_iterator(self):
         stream = AsyncStream(TestShim.AsyncIterable(range(10)).__aiter__())
-        self.assertFalse(isinstance(stream.stream, AsyncShim))
+        self.assertFalse(isinstance(stream.stream, AsyncAdaptor))
         got = await stream.filter(lambda x: x % 2).collect()
         self.assertEqual(got, [1, 3, 5, 7, 9])
 
     @run_to_completion
     async def test_iterator(self):
         stream = AsyncStream(TestShim.Iterable(range(10)).__iter__())
-        self.assertTrue(isinstance(stream.stream, AsyncShim))
+        self.assertTrue(isinstance(stream.stream, AsyncAdaptor))
         got = await stream.filter(lambda x: x % 2).collect()
         self.assertEqual(got, [1, 3, 5, 7, 9])
 
     @expect(TypeError)
     def test_value_error(self):
-        AsyncShim(1)
+        AsyncAdaptor(1)
 
     @expect(TypeError)
     def test_factory_value_error(self):
-        AsyncShim.new(1)
+        AsyncAdaptor.new(1)
 
     @expect(TypeError)
     def test_factory_error(self):

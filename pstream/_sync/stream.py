@@ -35,6 +35,8 @@ from builtins import sorted
 
 from collections import namedtuple, defaultdict
 
+from pstream._sync.util import not_infinite
+
 try:
     # Py3
     from collections.abc import Iterator, Iterable
@@ -43,7 +45,6 @@ except ImportError:  # pragma: no cover
     from collections import Iterator, Iterable
 
 from pstream.errors import InfiniteCollectionError
-from pstream.utils.defensive import must_be_callable
 
 
 class Stream(object):
@@ -82,6 +83,7 @@ class Stream(object):
         self._stream = itertools.chain(self._stream, *iterables)
         return self
 
+    @not_infinite
     def count(self):
         """
         Evaluates the stream, consuming it and returning a count of the number of elements in the stream.
@@ -94,13 +96,12 @@ class Stream(object):
         >>> count = Stream(range(100)).filter(lambda x: x % 2 is 0).count()
         >>> assert count == 50
         """
-        if self._infinite:
-            raise InfiniteCollectionError(Stream.count)
         count = 0
         for _ in self:
             count += 1
         return count
 
+    @not_infinite
     def collect(self):
         """
         Evaluates the stream, consuming it and returning a list of the final output.
@@ -114,8 +115,6 @@ class Stream(object):
         >>> got = stream.collect()
         >>> assert got == [2, 4, 6, 8]
         """
-        if self._infinite:
-            raise InfiniteCollectionError(Stream.collect)
         return [_ for _ in self]
 
     def distinct(self):
@@ -145,7 +144,6 @@ class Stream(object):
         self._stream = inner()
         return self
 
-    @must_be_callable
     def distinct_with(self, key):
         """
         Returns a stream of distinct elements. Distinction is computed by applying the builtin `hash` function
@@ -207,7 +205,6 @@ class Stream(object):
         self._stream = enumerate(self._stream)
         return self.map(lambda enumeration: Stream.Enumeration(*enumeration))
 
-    @must_be_callable
     def filter(self, predicate):
         """
         Returns a stream that filters each element using `predicate`. Only elements for which `predicate`
@@ -226,7 +223,6 @@ class Stream(object):
         self._stream = filter(predicate, self._stream)
         return self
 
-    @must_be_callable
     def filter_false(self, predicate):
         """
         Returns a stream that filters each element using `predicate`. Only elements for which `predicate`
@@ -269,7 +265,7 @@ class Stream(object):
         self._stream = (x for stream in self._stream for x in stream)
         return self
 
-    @must_be_callable
+    @not_infinite
     def for_each(self, f):
         """
         Evaluates the stream, consuming it and calling `f` for each element in the stream.
@@ -299,6 +295,7 @@ class Stream(object):
         for x in self:
             f(x)
 
+    @not_infinite
     def group_by(self, key):
         """
         Returns a stream that groups elements together using the provided `key` function.
@@ -345,7 +342,6 @@ class Stream(object):
         self._stream = inner()
         return self
 
-    @must_be_callable
     def inspect(self, f):
         """
         Returns a stream that calls the function, `f`, with a reference to each element before yielding it.
@@ -377,7 +373,6 @@ class Stream(object):
         self._stream = inner()
         return self
 
-    @must_be_callable
     def map(self, f):
         """
         Returns a stream that maps each value using `f`.
@@ -394,7 +389,7 @@ class Stream(object):
         self._stream = map(f, self._stream)
         return self
 
-    @must_be_callable
+    @not_infinite
     def reduce(self, f, accumulator):
         """
         Evaluates the stream, consuming it and applying the function `f` to each item in the stream,
@@ -418,6 +413,7 @@ class Stream(object):
         """
         return functools.reduce(f, self, accumulator)
 
+    @not_infinite
     def reverse(self):
         """
         Returns a stream whose elements are reversed.
@@ -463,7 +459,6 @@ class Stream(object):
         self._stream = inner()
         return self
 
-    @must_be_callable
     def skip_while(self, predicate):
         """
         Returns a stream that rejects elements while `predicate` returns `True`.
@@ -482,6 +477,7 @@ class Stream(object):
         self._stream = itertools.dropwhile(predicate, self._stream)
         return self
 
+    @not_infinite
     def sort(self):
         """
         Returns a stream whose elements are sorted.
@@ -498,6 +494,7 @@ class Stream(object):
         """
         return self.sort_with(None)
 
+    @not_infinite
     def sort_with(self, key):
         """
         Returns a stream whose elements are sorted using the provided key selection function.
@@ -563,7 +560,6 @@ class Stream(object):
         self._infinite = False
         return self
 
-    @must_be_callable
     def take_while(self, predicate):
         """
         Returns a stream that only accepts elements while `predicate` returns `True`.
@@ -694,9 +690,14 @@ class Stream(object):
         ...     print(error)
         Stream.collect was called on an infinitely repeating iterator. If you use Stream.repeat, then you MUST include either a Stream.take or a Stream.take_while if you wish to call Stream.collect
         """
-        return self.repeat_with(lambda: element)
 
-    @must_be_callable
+        def inner():
+            while True:
+                yield element
+        self._stream = inner()
+        self._infinite = True
+        return self
+
     def repeat_with(self, f):
         """
         Returns a stream that yields the output of `f` endlessly.

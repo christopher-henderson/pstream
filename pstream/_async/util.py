@@ -19,54 +19,52 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from inspect import iscoroutinefunction
 from collections.abc import AsyncIterator, AsyncIterable, Iterator, Iterable
 from functools import wraps
 
 from pstream.errors import InfiniteCollectionError
 
 
-def not_infinite_a(fn):
-    async def inner(self, *args, **kwargs):
-        if self._infinite:
-            raise InfiniteCollectionError(fn)
-        return await fn(self, *args, **kwargs)
+def not_infinite(fn):
+    if iscoroutinefunction(fn):
+        @wraps(fn)
+        async def inner(self, *args, **kwargs):
+            if self._infinite:
+                raise InfiniteCollectionError(fn)
+            return await fn(self, *args, **kwargs)
+    else:
+        @wraps(fn)
+        def inner(self, *args, **kwargs):
+            if self._infinite:
+                raise InfiniteCollectionError(fn)
+            return fn(self, *args, **kwargs)
     return inner
 
 
-def not_infinite_s(fn):
-    def inner(self, *args, **kwargs):
-        if self._infinite:
-            raise InfiniteCollectionError(fn)
-        return fn(self, *args, **kwargs)
+def unwrap(fn):
+    if iscoroutinefunction(fn):
+        @wraps(fn)
+        async def inner(self, *args, **kwargs):
+            if isinstance(self.stream, AsyncAdaptor):
+                self.stream = self.stream.stream
+            try:
+                return await fn(self, *args, **kwargs)
+            finally:
+                self.stream = AsyncAdaptor.new(self.stream)
+    else:
+        @wraps(fn)
+        def inner(self, *args, **kwargs):
+            if isinstance(self.stream, AsyncAdaptor):
+                self.stream = self.stream.stream
+            try:
+                return fn(self, *args, **kwargs)
+            finally:
+                self.stream = AsyncAdaptor.new(self.stream)
     return inner
 
 
-def shim(fn):
-    @wraps(fn)
-    def inner(self, *args):
-        if isinstance(self.stream, AsyncShim):
-            self.stream = self.stream.stream
-        try:
-            return fn(self, *args)
-        finally:
-            self.stream = AsyncShim.new(self.stream)
-    return inner
-
-
-def async_shim(fn):
-    @wraps(fn)
-    async def inner(self, *args):
-        if isinstance(self.stream, AsyncShim):
-            self.stream = self.stream.stream
-        try:
-            return await fn(self, *args)
-        finally:
-            self.stream = AsyncShim.new(self.stream)
-    return inner
-
-
-class AsyncShim:
+class AsyncAdaptor:
 
     @staticmethod
     def new(stream):
@@ -75,9 +73,9 @@ class AsyncShim:
         if isinstance(stream, AsyncIterable):
             return stream.__aiter__()
         if isinstance(stream, Iterator):
-            return AsyncShim(stream)
+            return AsyncAdaptor(stream)
         if isinstance(stream, Iterable):
-            return AsyncShim(stream.__iter__())
+            return AsyncAdaptor(stream.__iter__())
         raise TypeError
 
     def __init__(self, stream):
