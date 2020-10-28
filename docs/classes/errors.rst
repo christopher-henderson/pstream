@@ -6,10 +6,8 @@
 PStream: fluent, async, iteration
 ===================================
 
-
 .. automodule:: pstream.errors
    :members:
-
 
 Indices and tables
 ==================

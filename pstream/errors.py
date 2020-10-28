@@ -27,8 +27,3 @@ class InfiniteCollectionError(ValueError):
                                                       'If you use Stream.repeat, then you MUST include either a '
                                                       'Stream.take or a Stream.take_while if you wish to '
                                                       'call {}'.format(name, name))
-
-
-class NotCallableError(ValueError):
-    def __init__(self, method, received):
-        super(NotCallableError, self).__init__('{} requires a callable. Received {}'.format(method, type(received)))

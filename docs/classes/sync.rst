@@ -6,11 +6,8 @@
 PStream: fluent, async, iteration
 ===================================
 
-Hi!
-
 .. autoclass:: pstream.Stream
    :members:
-
 
 Indices and tables
 ==================
