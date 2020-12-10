@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pstream",
-    version="0.0.26",
+    version="0.0.27",
     author="Christopher Henderson",
     author_email="chris@chenderson.org",
     description="Provides a Stream and AsyncStream for composing fluent lazily evaluated, sync/async fusion, iterators.",
@@ -20,5 +20,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=["future>=0.18.2"],
-    python_requires='>=2.7, >=3.6, <4',
+    python_requires=' >=2.7.*, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4',
 )
