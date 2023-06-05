@@ -11,7 +11,7 @@ matrix:
     - python: "3.6"
     - python: "3.7"
     - python: "3.8"
-    - python: "3.9-dev"
+    - python: "3.9"
     - name: "Python 2.7.10 on Darwin"
       os: osx
       osx_image: xcode9.3  # Python 2.7.14_2 running on macOS 10.13
